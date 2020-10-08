@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.14
+# v0.12.2
 
 using Markdown
 using InteractiveUtils
@@ -24,6 +24,7 @@ begin
 	Pkg.add(["Plots", "PlutoUI",])
 
 	using Plots
+	theme(:dark)
 	plotly()
 	using PlutoUI
 end
@@ -36,6 +37,15 @@ using StatsBase: sample
 
 # ╔═╡ 47d77078-066e-11eb-2b01-697805f14fbe
 using StatsBase: std
+
+# ╔═╡ 95a53712-097b-11eb-1319-4324e0afd2b0
+begin
+	import DarkMode
+	DarkMode.enable()
+end
+
+# ╔═╡ 4fc98a56-0988-11eb-0d37-17eb23539d5b
+#html"<style> pluto-runarea {background: hsl(0%, 0%, 0%);} </style>"
 
 # ╔═╡ 01341648-0403-11eb-2212-db450c299f35
 md"_homework 4, version 1_"
@@ -614,9 +624,9 @@ md"""
 """
 
 # ╔═╡ 843fd63c-04d0-11eb-0113-c58d346179d6
-function sir_mean_plot(simulations::Vector{<:NamedTuple})
+function sir_mean_plot(simulations)
 	# you might need T for this function, here's a trick to get it:
-	T = length(first(simulations).S)
+	T = length(first(simulations)[1].S)
 	
 	p = plot(
 		title="Mean values",
@@ -624,9 +634,9 @@ function sir_mean_plot(simulations::Vector{<:NamedTuple})
 		ylabel="Number of agents",
 	)
 	
-	med_S = map(x -> x.S, simulations) |> mean
-	med_I = map(x -> x.I, simulations) |> mean
-	med_R = map(x -> x.R, simulations) |> mean
+	med_S = map(x -> x[1].S, simulations) |> mean
+	med_I = map(x -> x[1].I, simulations) |> mean
+	med_R = map(x -> x[1].R, simulations) |> mean
 	
 	plot!(p, 1:T, med_S, label="S", lw=3)
 	plot!(p, 1:T, med_I, label="I", lw=3)
@@ -654,9 +664,9 @@ This should confirm that the distribution of $I$ at each step is pretty wide!
 """
 
 # ╔═╡ 287ee7aa-0435-11eb-0ca3-951dbbe69404
-function sir_mean_error_plot(simulations::Vector{<:NamedTuple})
+function sir_mean_error_plot(simulations)
 	# you might need T for this function, here's a trick to get it:
-	T = length(first(simulations).S)
+	T = length(first(simulations)[1].S)
 	
 	p = plot(
 		title="Mean values",
@@ -664,12 +674,12 @@ function sir_mean_error_plot(simulations::Vector{<:NamedTuple})
 		ylabel="Number of agents",
 	)
 	
-	med_S = map(x -> x.S, simulations) |> mean
-	med_I = map(x -> x.I, simulations) |> mean
-	med_R = map(x -> x.R, simulations) |> mean
-	σ_S = map(x -> x.S, simulations) |> std
-	σ_I = map(x -> x.I, simulations) |> std
-	σ_R = map(x -> x.R, simulations) |> std
+	med_S = map(x -> x[1].S, simulations) |> mean
+	med_I = map(x -> x[1].I, simulations) |> mean
+	med_R = map(x -> x[1].R, simulations) |> mean
+	σ_S = map(x -> x[1].S, simulations) |> std
+	σ_I = map(x -> x[1].I, simulations) |> std
+	σ_R = map(x -> x[1].R, simulations) |> std
 	
 	plot!(p, 1:T, med_S, ribbon=σ_S, label="S", lw=3)
 	plot!(p, 1:T, med_I, ribbon=σ_I, label="I", lw=3)
@@ -690,6 +700,16 @@ md"""
 
 👉 Plot the probability distribution of `num_infected`. Does it have a recognisable shape? (Feel free to increase the number of agents in order to get better statistics.)
 
+"""
+
+# ╔═╡ 0afd859a-081a-11eb-02bd-bb270001442f
+md"""
+I'm going to re-organize the data into a matrix to help me visualize the agents across simulations all at once
+"""
+
+# ╔═╡ 8595bad2-081a-11eb-3449-f150ba3dc48a
+md"""
+For the most part, it looks like around half of the population does not infect anyone, while a small fraction is able to infect many people.
 """
 
 # ╔═╡ 9635c944-0403-11eb-3982-4df509f6a556
@@ -770,7 +790,6 @@ end
 
 # ╔═╡ 887d27fc-04bc-11eb-0ab9-eb95ef9607f8
 function simulation(N::Integer, T::Integer, infection::AbstractInfection)
-
 	agents = generate_agents(N)
 	S_counts = zeros(Int, T)
 	I_counts = zeros(Int, T)
@@ -782,7 +801,7 @@ function simulation(N::Integer, T::Integer, infection::AbstractInfection)
 		R_counts[i] = N - (S_counts[i] + I_counts[i])
 	end
 	
-	return (S=S_counts, I=I_counts, R=R_counts)
+	return (S=S_counts, I=I_counts, R=R_counts), agents
 end
 
 # ╔═╡ b92f1cec-04ae-11eb-0072-3535d1118494
@@ -790,6 +809,19 @@ simulation(3, 20, InfectionRecovery(0.9, 0.2))
 
 # ╔═╡ 2c62b4ae-04b3-11eb-0080-a1035a7e31a2
 simulation(100, 1000, InfectionRecovery(0.005, 0.2))
+
+# ╔═╡ c5156c72-04af-11eb-1106-b13969b036ca
+let
+	run_basic_sir
+	
+	N = 100
+	T = 1000
+	sim, agents = simulation(N, T, InfectionRecovery(0.02, 0.002))
+	
+	result = plot(1:T, sim.S, ylim=(0, N), label="Susceptible")
+	plot!(result, 1:T, sim.I, ylim=(0, N), label="Infectious")
+	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
+end
 
 # ╔═╡ 38b1aa5a-04cf-11eb-11a2-930741fc9076
 function repeat_simulations(N, T, infection, num_simulations)
@@ -801,32 +833,22 @@ function repeat_simulations(N, T, infection, num_simulations)
 	end
 end
 
-# ╔═╡ c5156c72-04af-11eb-1106-b13969b036ca
-let
-	run_basic_sir
-	
-	N = 100
-	T = 1000
-	sim = simulation(N, T, InfectionRecovery(0.02, 0.002))
-	
-	result = plot(1:T, sim.S, ylim=(0, N), label="Susceptible")
-	plot!(result, 1:T, sim.I, ylim=(0, N), label="Infectious")
-	plot!(result, 1:T, sim.R, ylim=(0, N), label="Recovered")
-end
-
 # ╔═╡ 80c2cd88-04b1-11eb-326e-0120a39405ea
 simulations = repeat_simulations(100, 1000, InfectionRecovery(0.02, 0.002), 20)
+
+# ╔═╡ 5536ec14-080b-11eb-3c99-79a9e0329bda
+simulations
 
 # ╔═╡ 9cd2bb00-04b1-11eb-1d83-a703907141a7
 let
 	p = plot()
 	
 	for sim in simulations
-		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
+		plot!(p, 1:1000, sim[1].I, alpha=.5, label=nothing)
 	end
 	
 	# Plot mean
-	med_I = map(x -> x.I, simulations) |> mean
+	med_I = map(x -> x[1].I, simulations) |> mean
 	plot!(p, 1:1000, med_I, label=nothing, lw=3)
 	
 	p
@@ -834,6 +856,39 @@ end
 
 # ╔═╡ 7f635722-04d0-11eb-3209-4b603c9e843c
 sir_mean_plot(simulations)
+
+# ╔═╡ 6762f40c-0816-11eb-34b8-f5171fe02b83
+begin
+	n_sims = length(simulations)
+	n_agents = length(simulations[1][2])
+	num_infected_matrix = Matrix{Int}(undef, n_agents, n_sims)
+	for (i, sim) in enumerate(simulations)
+	 	num_infected_matrix[:, i] = map(x -> x.num_infected , sim[2])
+	end
+	num_infected_matrix
+	heatmap(
+		num_infected_matrix,
+		xlabel = "Simulation #",
+		ylabel = "Agent #",
+		colorbar_title = "num_infected",
+		zrotation=45,
+	)
+end
+
+# ╔═╡ 289004b6-081a-11eb-02f5-b3173f5e68ce
+md"""
+We can then look at the probability distribution of `num_infected` for a given simulation by moving the slider below:
+
+Simulation: $(@bind sim_number Slider(1:n_sims, show_value=true))
+"""
+
+# ╔═╡ 8b388648-0819-11eb-09d9-c756247b5490
+histogram(
+	num_infected_matrix[:, sim_number],
+	label = "Simulation $(sim_number)",
+	xlabel = "Number infected",
+	ylabel = "Number of agents",
+)
 
 # ╔═╡ 2a9ade2c-066d-11eb-184f-9fdd3b15e4c6
 let
@@ -856,9 +911,6 @@ begin
 	)
 	sir_mean_error_plot(simulations2)
 end
-
-# ╔═╡ 26e2978e-0435-11eb-0d61-25f552d2771e
-histogram(map(x -> last(x.I), simulations2))
 
 # ╔═╡ 99ef7b2a-0403-11eb-08ef-e1023cd151ae
 md"""
@@ -883,11 +935,11 @@ let
 	p = plot()
 	
 	for sim in simulations
-		plot!(p, 1:1000, sim.I, alpha=.5, label=nothing)
+		plot!(p, 1:1000, sim[1].I, alpha=.5, label=nothing)
 	end
 	
 	# Plot mean
-	med_I = map(x -> x.I, simulations) |> mean
+	med_I = map(x -> x[1].I, simulations) |> mean
 	plot!(p, 1:1000, med_I, label=nothing, lw=3)
 	
 	p
@@ -1195,6 +1247,8 @@ bigbreak
 bigbreak
 
 # ╔═╡ Cell order:
+# ╠═95a53712-097b-11eb-1319-4324e0afd2b0
+# ╠═4fc98a56-0988-11eb-0d37-17eb23539d5b
 # ╟─01341648-0403-11eb-2212-db450c299f35
 # ╟─03a85970-0403-11eb-334a-812b59c0905b
 # ╟─06f30b2a-0403-11eb-0f05-8badebe1011d
@@ -1289,14 +1343,15 @@ bigbreak
 # ╠═46133a74-04b1-11eb-0b46-0bc74e564680
 # ╟─95771ce2-0403-11eb-3056-f1dc3a8b7ec3
 # ╠═887d27fc-04bc-11eb-0ab9-eb95ef9607f8
-# ╠═b92f1cec-04ae-11eb-0072-3535d1118494
+# ╟─b92f1cec-04ae-11eb-0072-3535d1118494
 # ╠═2c62b4ae-04b3-11eb-0080-a1035a7e31a2
 # ╠═c5156c72-04af-11eb-1106-b13969b036ca
 # ╟─28db9d98-04ca-11eb-3606-9fb89fa62f36
-# ╟─0a967f38-0493-11eb-0624-77e40b24d757
+# ╠═0a967f38-0493-11eb-0624-77e40b24d757
 # ╟─bf6fd176-04cc-11eb-008a-2fb6ff70a9cb
 # ╠═38b1aa5a-04cf-11eb-11a2-930741fc9076
 # ╠═80c2cd88-04b1-11eb-326e-0120a39405ea
+# ╠═5536ec14-080b-11eb-3c99-79a9e0329bda
 # ╟─80e6f1e0-04b1-11eb-0d4e-475f1d80c2bb
 # ╠═9cd2bb00-04b1-11eb-1d83-a703907141a7
 # ╟─9cf9080a-04b1-11eb-12a0-17013f2d37f5
@@ -1312,7 +1367,11 @@ bigbreak
 # ╠═9585f182-066e-11eb-2699-87dfc27c2a65
 # ╠═47d77078-066e-11eb-2b01-697805f14fbe
 # ╟─9611ca24-0403-11eb-3582-b7e3bb243e62
-# ╠═26e2978e-0435-11eb-0d61-25f552d2771e
+# ╟─0afd859a-081a-11eb-02bd-bb270001442f
+# ╠═6762f40c-0816-11eb-34b8-f5171fe02b83
+# ╟─289004b6-081a-11eb-02f5-b3173f5e68ce
+# ╠═8b388648-0819-11eb-09d9-c756247b5490
+# ╟─8595bad2-081a-11eb-3449-f150ba3dc48a
 # ╟─9635c944-0403-11eb-3982-4df509f6a556
 # ╠═4ad11052-042c-11eb-3643-8b2b3e1269bc
 # ╟─61c00724-0403-11eb-228d-17c11670e5d1
