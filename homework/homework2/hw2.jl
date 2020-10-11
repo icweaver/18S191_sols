@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.14
+# v0.12.2
 
 using Markdown
 using InteractiveUtils
@@ -38,6 +38,8 @@ begin
 	using Statistics
 	using PlutoUI
 	using BenchmarkTools
+	import DarkMode
+	DarkMode.enable()
 end
 
 # ╔═╡ e6b6760a-f37f-11ea-3ae1-65443ef5a81a
@@ -72,20 +74,6 @@ Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 
 # ╔═╡ 938185ec-f384-11ea-21dc-b56b7469f798
 md"_Let's create a package environment:_"
-
-# ╔═╡ bca8c442-0083-11eb-190c-d3e91f85be5f
-lolz = @benchmark begin 
-    x = rand(10000)
-end
-
-# ╔═╡ 5fa821cc-0084-11eb-0433-bb8bb0e84820
-gen_large(x) = rand(x)
-
-# ╔═╡ cdba2d60-0084-11eb-3833-31c2a9fee249
-rand0(x) = Vector{Float64}(undef, x)
-
-# ╔═╡ ebeff64a-0084-11eb-3e8b-ab9e11f4eb95
-@btime rand0(10000)
 
 # ╔═╡ 0d144802-f319-11ea-0028-cd97a776a3d0
 #img = load(download("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Piet_Mondriaan%2C_1930_-_Mondrian_Composition_II_in_Red%2C_Blue%2C_and_Yellow.jpg/300px-Piet_Mondriaan%2C_1930_-_Mondrian_Composition_II_in_Red%2C_Blue%2C_and_Yellow.jpg"))
@@ -482,18 +470,21 @@ function least_energy(energies, i, j)
 end
 
 # ╔═╡ 5e61042c-fdee-11ea-3c7e-6935d12745e2
-# with_terminal() do
-# let
-# 	energies = [
-# 		1 4 7 8
-# 		3 2 1 6
-# 		4 9 6 3
-# 		2 7 4 1.
-# 	]
+with_terminal() do
+#let
+	energies = [
+		0.1 0.8 0.8 0.3 0.5 0.4
+		0.7 0.8 0.1 0.0 0.8 0.4
+		0.8 0.0 0.4 0.7 0.2 0.9
+		0.9 0.0 0.0 0.5 0.9 0.4
+		0.2 0.4 0.0 0.2 0.4 0.5
+		0.2 0.4 0.2 0.5 0.3 0.0
+	]
 	
-# 	@code_warntype least_energy(energies, 1, 1)
-# 	@btime least_energy($energies, $1, $2)
-# end
+	# @code_warntype least_energy(energies, 1, 1)
+	# @btime least_energy($energies, $1, $2)
+	@show least_energy(energies, 1, 4)
+end
 
 # ╔═╡ a7f3d9f8-f3bb-11ea-0c1a-55bbb8408f09
 md"""
@@ -1078,12 +1069,8 @@ bigbreak
 # ╟─85cfbd10-f384-11ea-31dc-b5693630a4c5
 # ╟─33e43c7c-f381-11ea-3abc-c942327456b1
 # ╟─938185ec-f384-11ea-21dc-b56b7469f798
-# ╠═bca8c442-0083-11eb-190c-d3e91f85be5f
-# ╠═5fa821cc-0084-11eb-0433-bb8bb0e84820
-# ╠═cdba2d60-0084-11eb-3833-31c2a9fee249
-# ╠═ebeff64a-0084-11eb-3e8b-ab9e11f4eb95
 # ╠═86e1ee96-f314-11ea-03f6-0f549b79e7c9
-# ╠═a4937996-f314-11ea-2ff9-615c888afaa8
+# ╟─a4937996-f314-11ea-2ff9-615c888afaa8
 # ╠═0d144802-f319-11ea-0028-cd97a776a3d0
 # ╟─cc9fcdae-f314-11ea-1b9a-1f68b792f005
 # ╟─b49a21a6-f381-11ea-1a98-7f144c55c9b7
@@ -1153,7 +1140,7 @@ bigbreak
 # ╟─9101d5a0-f371-11ea-1c04-f3f43b96ca4a
 # ╠═ddba07dc-f3b7-11ea-353e-0f67713727fc
 # ╠═8ec27ef8-f320-11ea-2573-c97b7b908cb7
-# ╟─5e61042c-fdee-11ea-3c7e-6935d12745e2
+# ╠═5e61042c-fdee-11ea-3c7e-6935d12745e2
 # ╟─9f18efe2-f38e-11ea-0871-6d7760d0b2f6
 # ╟─a7f3d9f8-f3bb-11ea-0c1a-55bbb8408f09
 # ╠═fa8e2772-f3b6-11ea-30f7-699717693164

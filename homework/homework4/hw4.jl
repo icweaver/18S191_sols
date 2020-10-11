@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.2
+# v0.12.3
 
 using Markdown
 using InteractiveUtils
@@ -396,6 +396,18 @@ Integer(test_status)
 # ╔═╡ 7b35d02a-0616-11eb-1115-6969770dfbc1
 Integer.([I, R])
 
+# ╔═╡ ffac16b4-09df-11eb-0003-d155742c2e8e
+f(x) = x^2
+
+# ╔═╡ 032708e2-09e0-11eb-2a10-f326c30c2784
+f(x, y) = x + y
+
+# ╔═╡ 081e80e4-09e0-11eb-1adc-3f05895419b2
+f(2)
+
+# ╔═╡ 0fb45326-09e0-11eb-0df1-3d0aeb95d7c5
+f(1, 2)
+
 # ╔═╡ 860790fc-0403-11eb-2f2e-355f77dcc7af
 md"""
 #### Exercise 2.2
@@ -618,6 +630,12 @@ md"""
 In the cell below, we plot the evolution of the number of $I$ individuals as a function of time for each of the simulations on the same plot using transparency (`alpha=0.5` inside the plot command).
 """
 
+# ╔═╡ 058f840e-0a32-11eb-2003-2b7742a2cdfa
+# Gets median of S, I, or R over time from `simulations`
+function get_med(simulations, condition=:I)
+	med_condition = map(x -> getproperty(x[1], condition), simulations) |> mean
+end
+
 # ╔═╡ 95c598d4-0403-11eb-2328-0175ed564915
 md"""
 👉 Write a function `sir_mean_plot` that returns a plot of the means of $S$, $I$ and $R$ as a function of time on a single graph.
@@ -634,15 +652,12 @@ function sir_mean_plot(simulations)
 		ylabel="Number of agents",
 	)
 	
-	med_S = map(x -> x[1].S, simulations) |> mean
-	med_I = map(x -> x[1].I, simulations) |> mean
-	med_R = map(x -> x[1].R, simulations) |> mean
+	conditions = [:S, :I, :R]
+	for condition in conditions
+		plot!(p, 1:T, get_med(simulations, condition), label=String(condition), lw=3)
+	end 	
 	
-	plot!(p, 1:T, med_S, label="S", lw=3)
-	plot!(p, 1:T, med_I, label="I", lw=3)
-	plot!(p, 1:T, med_R, label="R", lw=3)
-	
-	p
+	return p
 end
 
 # ╔═╡ dfb99ace-04cf-11eb-0739-7d694c837d59
@@ -651,10 +666,10 @@ md"""
 """
 
 # ╔═╡ eda85d6e-066c-11eb-28f2-fd6235947c4a
-[
-	@bind p_infection Slider(0:0.001:0.5, show_value=true)
-	@bind p_recovery Slider(0:0.001:0.005, show_value=true)
-]
+md"""
+`p_infection` $(@bind p_infection Slider(0:0.001:0.5, show_value=true))\
+`p_recovery` $(@bind p_recovery Slider(0:0.001:0.005, show_value=true))
+"""
 
 # ╔═╡ 95eb9f88-0403-11eb-155b-7b2d3a07cff0
 md"""
@@ -718,9 +733,6 @@ md"""
 👉 What are three *simple* ways in which you could characterise the magnitude (size) of the epidemic outbreak? Find approximate values of these quantities for one of the runs of your simulation.
 
 """
-
-# ╔═╡ 4ad11052-042c-11eb-3643-8b2b3e1269bc
-
 
 # ╔═╡ 61c00724-0403-11eb-228d-17c11670e5d1
 md"""
@@ -836,9 +848,6 @@ end
 # ╔═╡ 80c2cd88-04b1-11eb-326e-0120a39405ea
 simulations = repeat_simulations(100, 1000, InfectionRecovery(0.02, 0.002), 20)
 
-# ╔═╡ 5536ec14-080b-11eb-3c99-79a9e0329bda
-simulations
-
 # ╔═╡ 9cd2bb00-04b1-11eb-1d83-a703907141a7
 let
 	p = plot()
@@ -848,7 +857,7 @@ let
 	end
 	
 	# Plot mean
-	med_I = map(x -> x[1].I, simulations) |> mean
+	med_I = get_med(simulations, :I)
 	plot!(p, 1:1000, med_I, label=nothing, lw=3)
 	
 	p
@@ -888,6 +897,12 @@ histogram(
 	label = "Simulation $(sim_number)",
 	xlabel = "Number infected",
 	ylabel = "Number of agents",
+)
+
+# ╔═╡ 2d130cc8-0a35-11eb-00cb-3f99718d2025
+plot(
+	simulations[4][1].I,
+	#xscale = :log10
 )
 
 # ╔═╡ 2a9ade2c-066d-11eb-184f-9fdd3b15e4c6
@@ -930,16 +945,16 @@ Note that you should be able to re-use the `sweep!` and `simulation` functions ,
 """
 
 # ╔═╡ 1ac4b33a-0435-11eb-36f8-8f3f81ae7844
-let
-	simulations = repeat_simulations(100, 1000, Reinfection(0.02, 0.002), 20)
+begin
+	simulations3 = repeat_simulations(100, 1000, Reinfection(0.02, 0.002), 20)
 	p = plot()
 	
-	for sim in simulations
+	for sim in simulations3
 		plot!(p, 1:1000, sim[1].I, alpha=.5, label=nothing)
 	end
 	
 	# Plot mean
-	med_I = map(x -> x[1].I, simulations) |> mean
+	med_I = map(x -> x[1].I, simulations3) |> mean
 	plot!(p, 1:1000, med_I, label=nothing, lw=3)
 	
 	p
@@ -954,7 +969,7 @@ md"""
 
 # ╔═╡ ebce7be6-069a-11eb-19f8-75028b26b02e
 md"""
-It's not going down =|
+It's not going down 😮
 """
 
 # ╔═╡ da49710e-0420-11eb-092e-4f1173868738
@@ -1306,6 +1321,10 @@ bigbreak
 # ╟─847d0fc2-041d-11eb-2864-79066e223b45
 # ╠═5e090418-0616-11eb-282b-853003c44cfa
 # ╠═7b35d02a-0616-11eb-1115-6969770dfbc1
+# ╠═ffac16b4-09df-11eb-0003-d155742c2e8e
+# ╠═032708e2-09e0-11eb-2a10-f326c30c2784
+# ╠═081e80e4-09e0-11eb-1adc-3f05895419b2
+# ╠═0fb45326-09e0-11eb-0df1-3d0aeb95d7c5
 # ╟─860790fc-0403-11eb-2f2e-355f77dcc7af
 # ╠═ae4ac4b4-041f-11eb-14f5-1bcde35d18f2
 # ╟─ae70625a-041f-11eb-3082-0753419d6d57
@@ -1351,15 +1370,15 @@ bigbreak
 # ╟─bf6fd176-04cc-11eb-008a-2fb6ff70a9cb
 # ╠═38b1aa5a-04cf-11eb-11a2-930741fc9076
 # ╠═80c2cd88-04b1-11eb-326e-0120a39405ea
-# ╠═5536ec14-080b-11eb-3c99-79a9e0329bda
 # ╟─80e6f1e0-04b1-11eb-0d4e-475f1d80c2bb
 # ╠═9cd2bb00-04b1-11eb-1d83-a703907141a7
+# ╠═058f840e-0a32-11eb-2003-2b7742a2cdfa
 # ╟─9cf9080a-04b1-11eb-12a0-17013f2d37f5
 # ╟─95c598d4-0403-11eb-2328-0175ed564915
 # ╠═843fd63c-04d0-11eb-0113-c58d346179d6
 # ╠═7f635722-04d0-11eb-3209-4b603c9e843c
 # ╟─dfb99ace-04cf-11eb-0739-7d694c837d59
-# ╠═eda85d6e-066c-11eb-28f2-fd6235947c4a
+# ╟─eda85d6e-066c-11eb-28f2-fd6235947c4a
 # ╠═2a9ade2c-066d-11eb-184f-9fdd3b15e4c6
 # ╟─95eb9f88-0403-11eb-155b-7b2d3a07cff0
 # ╠═287ee7aa-0435-11eb-0ca3-951dbbe69404
@@ -1373,7 +1392,7 @@ bigbreak
 # ╠═8b388648-0819-11eb-09d9-c756247b5490
 # ╟─8595bad2-081a-11eb-3449-f150ba3dc48a
 # ╟─9635c944-0403-11eb-3982-4df509f6a556
-# ╠═4ad11052-042c-11eb-3643-8b2b3e1269bc
+# ╠═2d130cc8-0a35-11eb-00cb-3f99718d2025
 # ╟─61c00724-0403-11eb-228d-17c11670e5d1
 # ╠═8dd97820-04a5-11eb-36c0-8f92d4b859a8
 # ╟─99ef7b2a-0403-11eb-08ef-e1023cd151ae
