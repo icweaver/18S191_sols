@@ -78,7 +78,7 @@ Feel free to ask questions!
 # ╔═╡ 1f299cc6-0970-11eb-195b-3f951f92ceeb
 # edit the code below to set your name and kerberos ID (i.e. email without @mit.edu)
 
-student = (name = "Jazzy Doe", kerberos_id = "jazz")
+student = (name = "Ian Weaver", kerberos_id = "hahvard")
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll around the page to see what's up
@@ -91,6 +91,12 @@ Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 
 # ╔═╡ 2848996c-0970-11eb-19eb-c719d797c322
 md"_Let's create a package environment:_"
+
+# ╔═╡ cf99262e-0bdb-11eb-287d-25a1450ca6d1
+begin
+	import DarkMode
+	DarkMode.enable(theme="yonce")
+end
 
 # ╔═╡ 69d12414-0952-11eb-213d-2f9e13e4b418
 md"""
@@ -119,7 +125,10 @@ We define a struct type `Coordinate` that contains integers `x` and `y`.
 """
 
 # ╔═╡ 0ebd35c8-0972-11eb-2e67-698fd2d311d2
-
+struct Coordinate{T <: Int}
+	x::T
+	y::T
+end
 
 # ╔═╡ 027a5f48-0a44-11eb-1fbf-a94d02d0b8e3
 md"""
@@ -127,7 +136,7 @@ md"""
 """
 
 # ╔═╡ b2f90634-0a68-11eb-1618-0b42f956b5a7
-origin = missing
+origin = Coordinate(0, 0)
 
 # ╔═╡ 3e858990-0954-11eb-3d10-d10175d8ca1c
 md"""
@@ -135,9 +144,9 @@ md"""
 """
 
 # ╔═╡ 189bafac-0972-11eb-1893-094691b2073c
-# function make_tuple(c)
-# 	missing
-# end
+function make_tuple(c::Coordinate)
+	(c.x, c.y)
+end
 
 # ╔═╡ 73ed1384-0a29-11eb-06bd-d3c441b8a5fc
 md"""
@@ -179,10 +188,7 @@ md"""
 """
 
 # ╔═╡ e24d5796-0a68-11eb-23bb-d55d206f3c40
-# function Base.:+(a::TYPE, b::TYPE)
-	
-# 	return missing
-# end
+Base.:+(a::Coordinate, b::Coordinate) = Coordinate(a.x+b.x, a.y+b.y)
 
 # ╔═╡ ec8e4daa-0a2c-11eb-20e1-c5957e1feba3
 # Coordinate(3,4) + Coordinate(10,10) # uncomment to check + works
@@ -199,14 +205,12 @@ In our model, agents will be able to walk in 4 directions: up, down, left and ri
 """
 
 # ╔═╡ 5278e232-0972-11eb-19ff-a1a195127297
-# uncomment this:
-
-# possible_moves = [
-# 	Coordinate( 1, 0), 
-# 	Coordinate( 0, 1), 
-# 	Coordinate(-1, 0), 
-# 	Coordinate( 0,-1),
-# ]
+possible_moves = [
+	Coordinate( 1, 0), 
+	Coordinate( 0, 1), 
+	Coordinate(-1, 0), 
+	Coordinate( 0,-1),
+]
 
 # ╔═╡ 71c9788c-0aeb-11eb-28d2-8dcc3f6abacd
 md"""
@@ -214,7 +218,7 @@ md"""
 """
 
 # ╔═╡ 69151ce6-0aeb-11eb-3a53-290ba46add96
-
+Coordinate(4, 5) + rand(possible_moves)
 
 # ╔═╡ 3eb46664-0954-11eb-31d8-d9c0b74cf62b
 md"""
@@ -231,13 +235,21 @@ Possible steps:
 """
 
 # ╔═╡ edf86a0e-0a68-11eb-2ad3-dbf020037019
-# function trajectory(w::Coordinate, n::Int)
-	
-# 	return missing
-# end
+function trajectory(w::Coordinate, n::Int)
+	moves = rand(possible_moves, n)
+	traj = [Coordinate(0, 0) for _ in 1:n]
+	accumulate!(+, traj, moves, init=w)
+end
 
-# ╔═╡ 44107808-096c-11eb-013f-7b79a90aaac8
-# test_trajectory = trajectory(Coordinate(4,4), 30) # uncomment to test
+# ╔═╡ 6ba89162-0be1-11eb-3c77-a52f26d43ed4
+let
+	x = [1, 4, 5, 6]
+	y = [0, 0, 0, 0]
+	accumulate!(+, y, x, init=10)
+end
+
+# ╔═╡ d02cedb4-0be0-11eb-3f43-019afe2bc2f2
+test_trajectory = trajectory(Coordinate(4,4), 30) # uncomment to test
 
 # ╔═╡ 478309f4-0a31-11eb-08ea-ade1755f53e0
 function plot_trajectory!(p::Plots.Plot, trajectory::Vector; kwargs...)
@@ -248,7 +260,7 @@ function plot_trajectory!(p::Plots.Plot, trajectory::Vector; kwargs...)
 		kwargs...)
 end
 
-# ╔═╡ 87ea0868-0a35-11eb-0ea8-63e27d8eda6e
+# ╔═╡ 851f5f00-0be0-11eb-2b70-c75e7b4e7eba
 try
 	p = plot(ratio=1, size=(650,200))
 	plot_trajectory!(p, test_trajectory; color="black", showaxis=false, axis=nothing, linewidth=4)
@@ -257,13 +269,14 @@ catch
 end
 
 # ╔═╡ 51788e8e-0a31-11eb-027e-fd9b0dc716b5
-# 	let
-# 		long_trajectory = trajectory(Coordinate(4,4), 1000)
+	let
+		long_trajectory = trajectory(Coordinate(4,4), 1000)
 
-# 		p = plot(ratio=1)
-# 		plot_trajectory!(p, long_trajectory)
-# 		p
-# 	end
+		p = plot(ratio=1)
+		plot_trajectory!(p, long_trajectory)
+		scatter!(p, [4], [4])
+		p
+	end
 
 # ^ uncomment to visualize a trajectory
 
@@ -288,8 +301,15 @@ end
 ```
 """
 
-# ╔═╡ dcefc6fe-0a3f-11eb-2a96-ddf9c0891873
-
+# ╔═╡ f72be054-0be1-11eb-3fff-6ba07f374739
+let
+	trajectories = [trajectory(Coordinate(0, 0), 1_000) for _ in 1:10]
+	p = plot(ratio=1)
+	for trajectory in trajectories
+		plot_trajectory!(p, trajectory)
+	end
+	p
+end
 
 # ╔═╡ b4d5da4a-09a0-11eb-1949-a5807c11c76c
 md"""
@@ -927,10 +947,11 @@ bigbreak
 # ╟─1bba5552-0970-11eb-1b9a-87eeee0ecc36
 # ╟─49567f8e-09a2-11eb-34c1-bb5c0b642fe8
 # ╟─181e156c-0970-11eb-0b77-49b143cc0fc0
-# ╠═1f299cc6-0970-11eb-195b-3f951f92ceeb
+# ╟─1f299cc6-0970-11eb-195b-3f951f92ceeb
 # ╟─2848996c-0970-11eb-19eb-c719d797c322
 # ╠═2b37ca3a-0970-11eb-3c3d-4f788b411d1a
 # ╠═2dcb18d0-0970-11eb-048a-c1734c6db842
+# ╠═cf99262e-0bdb-11eb-287d-25a1450ca6d1
 # ╟─69d12414-0952-11eb-213d-2f9e13e4b418
 # ╟─fcafe15a-0a66-11eb-3ed7-3f8bbb8f5809
 # ╟─3e54848a-0954-11eb-3948-f9d7f07f5e23
@@ -941,7 +962,7 @@ bigbreak
 # ╟─66663fcc-0a58-11eb-3568-c1f990c75bf2
 # ╟─3e858990-0954-11eb-3d10-d10175d8ca1c
 # ╠═189bafac-0972-11eb-1893-094691b2073c
-# ╠═ad1253f8-0a34-11eb-265e-fffda9b6473f
+# ╟─ad1253f8-0a34-11eb-265e-fffda9b6473f
 # ╟─73ed1384-0a29-11eb-06bd-d3c441b8a5fc
 # ╠═96707ef0-0a29-11eb-1a3e-6bcdfb7897eb
 # ╠═b0337d24-0a29-11eb-1fab-876a87c0973f
@@ -949,20 +970,21 @@ bigbreak
 # ╠═e24d5796-0a68-11eb-23bb-d55d206f3c40
 # ╠═ec8e4daa-0a2c-11eb-20e1-c5957e1feba3
 # ╟─e144e9d0-0a2d-11eb-016e-0b79eba4b2bb
-# ╠═ec576da8-0a2c-11eb-1f7b-43dec5f6e4e7
+# ╟─ec576da8-0a2c-11eb-1f7b-43dec5f6e4e7
 # ╟─71c358d8-0a2f-11eb-29e1-57ff1915e84a
 # ╠═5278e232-0972-11eb-19ff-a1a195127297
 # ╟─71c9788c-0aeb-11eb-28d2-8dcc3f6abacd
 # ╠═69151ce6-0aeb-11eb-3a53-290ba46add96
 # ╟─3eb46664-0954-11eb-31d8-d9c0b74cf62b
 # ╠═edf86a0e-0a68-11eb-2ad3-dbf020037019
-# ╠═44107808-096c-11eb-013f-7b79a90aaac8
-# ╟─87ea0868-0a35-11eb-0ea8-63e27d8eda6e
+# ╠═6ba89162-0be1-11eb-3c77-a52f26d43ed4
+# ╠═d02cedb4-0be0-11eb-3f43-019afe2bc2f2
+# ╟─851f5f00-0be0-11eb-2b70-c75e7b4e7eba
 # ╟─058e3f84-0a34-11eb-3f87-7118f14e107b
 # ╠═478309f4-0a31-11eb-08ea-ade1755f53e0
 # ╠═51788e8e-0a31-11eb-027e-fd9b0dc716b5
 # ╟─3ebd436c-0954-11eb-170d-1d468e2c7a37
-# ╠═dcefc6fe-0a3f-11eb-2a96-ddf9c0891873
+# ╠═f72be054-0be1-11eb-3fff-6ba07f374739
 # ╟─b4d5da4a-09a0-11eb-1949-a5807c11c76c
 # ╠═0237ebac-0a69-11eb-2272-35ea4e845d84
 # ╠═ad832360-0a40-11eb-2857-e7f0350f3b12
