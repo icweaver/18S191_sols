@@ -892,8 +892,8 @@ Simulation: $(@bind sim_number Slider(1:n_sims, show_value=true))
 """
 
 # ╔═╡ 8b388648-0819-11eb-09d9-c756247b5490
-histogram(
-	num_infected_matrix[:, sim_number],
+bar(
+	frequencies(num_infected_matrix[:, sim_number]),
 	label = "Simulation $(sim_number)",
 	xlabel = "Number infected",
 	ylabel = "Number of agents",
