@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.8
+# v0.12.3
 
 using Markdown
 using InteractiveUtils
@@ -11,6 +11,12 @@ macro bind(def, element)
         global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
         el
     end
+end
+
+# ╔═╡ c8530dee-0c99-11eb-03a0-addecc2e7fd8
+begin
+ import DarkMode
+DarkMode.enable(theme="yonce")
 end
 
 # ╔═╡ fafae38e-e852-11ea-1208-732b4744e4c2
@@ -251,6 +257,11 @@ else
 	"""
 end
 
+# ╔═╡ c301c6da-0c9b-11eb-12c8-2f0e84d9c80e
+with_terminal() do
+	println("Hey")
+end
+
 # ╔═╡ c21096c0-e856-11ea-3dc5-a5b0cbf29335
 md"**Let's try it out below:**"
 
@@ -281,6 +292,11 @@ end
 
 
 # ╔═╡ dfdeab34-e751-11ea-0f90-2fa9bbdccb1e
+"""
+	triangle()
+
+Draw a neat triangle.
+"""
 triangle() = compose(context(), polygon([(1, 1), (0, 1), (1 / 2, 0)]))
 
 # ╔═╡ b923d394-e750-11ea-1971-595e09ab35b5
@@ -326,6 +342,7 @@ has area **$(area_sierpinski(n))**
 """
 
 # ╔═╡ Cell order:
+# ╠═c8530dee-0c99-11eb-03a0-addecc2e7fd8
 # ╟─fafae38e-e852-11ea-1208-732b4744e4c2
 # ╟─cdff6730-e785-11ea-2546-4969521b33a7
 # ╠═7308bc54-e6cd-11ea-0eab-83f7535edf25
@@ -357,13 +374,14 @@ has area **$(area_sierpinski(n))**
 # ╟─247773ae-eecb-11ea-2d0a-b5dc1b0f1895
 # ╠═ca8d2f72-e7b6-11ea-1893-f1e6d0a20dc7
 # ╟─71c78614-e7bc-11ea-0959-c7a91a10d481
+# ╠═c301c6da-0c9b-11eb-12c8-2f0e84d9c80e
 # ╟─c21096c0-e856-11ea-3dc5-a5b0cbf29335
 # ╟─52533e00-e856-11ea-08a7-25e556fb1127
-# ╠═147ed7b0-e856-11ea-0d0e-7ff0d527e352
+# ╟─147ed7b0-e856-11ea-0d0e-7ff0d527e352
 # ╟─c1ecad86-e7bc-11ea-1201-23ee380181a1
 # ╟─c9bf4288-e6ce-11ea-0e13-a36b5e685998
 # ╟─a60a492a-e7bc-11ea-0f0b-75d81ce46a01
 # ╟─b3c7a050-e855-11ea-3a22-3f514da746a4
 # ╟─d3625d20-e6ce-11ea-394a-53208540d626
-# ╟─dfdeab34-e751-11ea-0f90-2fa9bbdccb1e
+# ╠═dfdeab34-e751-11ea-0f90-2fa9bbdccb1e
 # ╟─b923d394-e750-11ea-1971-595e09ab35b5
