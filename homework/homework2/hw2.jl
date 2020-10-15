@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.2
+# v0.12.3
 
 using Markdown
 using InteractiveUtils
@@ -453,7 +453,7 @@ function least_energy(energies, i, j)
 	nrows, ncols = size(energies)
 	# base case
 	if i == nrows
-	   return energies[i, j], 0 # no need for recursive computation in the base case!
+	   return energies[i, j], 0
 	end
 	
 	# induction

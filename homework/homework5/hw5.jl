@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.3
+# v0.12.4
 
 using Markdown
 using InteractiveUtils
@@ -96,7 +96,7 @@ md"_Let's create a package environment:_"
 # ╔═╡ cf99262e-0bdb-11eb-287d-25a1450ca6d1
 begin
 	import DarkMode
-	DarkMode.enable(theme="yonce")
+	#DarkMode.enable(theme="yonce")
 end
 
 # ╔═╡ 69d12414-0952-11eb-213d-2f9e13e4b418
@@ -409,11 +409,11 @@ initialize(3, 10)
 # ╔═╡ e0b0880c-0a47-11eb-0db2-f760bbbf9c11
 # Color based on infection status
 color(s::InfectionStatus) = if s == S
-	"blue"
+	"#1f78b4"
 elseif s == I
-	"red"
+	"#c44e52"
 else
-	"green"
+	"#029e73"
 end
 
 # ╔═╡ b5a88504-0a47-11eb-0eda-f125d419e909
@@ -440,6 +440,8 @@ function visualize(agents::Vector, L)
 			legend = false,
 			c = color(agent),
 			msw = 0,
+			xlim = (-L, L),
+			ylim = (-L, L),
 			ratio = 1,
 		)
 	end
@@ -536,7 +538,7 @@ end
 
 # ╔═╡ f32b62d8-0d60-11eb-19ed-a35d0ae4ddf6
 function move!(agent::Agent, L::Number)
-	agent.position += collide_boundary(rand(possible_moves), L)
+	agent.position = collide_boundary(agent.position + rand(possible_moves), L)
 end
 
 # ╔═╡ 24fe0f1a-0a69-11eb-29fe-5fb6cbf281b8
@@ -585,7 +587,7 @@ let
 	
 	plot_before = visualize(agents, L)
 	
-	for _ in 1:k_sweeps
+	for _ in 1:k_sweeps*N
 		step!(agents, L, pandemic)
 	end
 	
@@ -609,13 +611,13 @@ k_sweep_max = 10000
 # ╔═╡ ef27de84-0a63-11eb-177f-2197439374c5
 let
 	N = 50
-	L = 30
+	L = 10
 	
 	agents = initialize(N, L)
 	
 	# compute k_sweep_max number of sweeps and plot the SIR
 	Ss, Is, Rs = Int[], Int[], Int[]
-	for i in 1:k_sweeps
+	for i in 1:k_sweeps*N
 		step!(agents, L, pandemic)
 		push!(Ss, sum(is_susceptible.(agents)))
 		push!(Is, sum(is_infected.(agents)))
@@ -623,9 +625,9 @@ let
 	end
 	
 	p = plot(xguide="step", yguide="number of agents")
-	plot!(p, Ss, label='S')
-	plot!(p, Is, label='I')
-	plot!(p, Rs, label='R')
+	plot!(p, Ss, label='S', c=color(S))
+	plot!(p, Is, label='I', c=color(I))
+	plot!(p, Rs, label='R', c=color(R))
 end
 
 # ╔═╡ 201a3810-0a45-11eb-0ac9-a90419d0b723
@@ -643,18 +645,19 @@ This an optional exercise, and our solution to 2️⃣ is given below.
 # ╔═╡ a1d1cb3a-0d64-11eb-1dc9-556f26360c87
 let
     N = 50
-    L = 40
+    L = 25
+	k_sweeps = 50
 
     x = initialize(N, L)
     
     # initialize to empty arrays
     Ss, Is, Rs = Int[], Int[], Int[]
     
-    Tmax = 20
+    Tmax = 200
     
     @gif for t in 1:Tmax
         # Do a sweep
-		for i in 1:50N
+		for i in 1:k_sweeps*N
             step!(x, L, pandemic)
         end
 		S_current = sum(is_susceptible.(x))
@@ -672,9 +675,9 @@ let
 		plot!(right, 1:t, Ss, color=color(S), label="S")
         plot!(right, 1:t, Is, color=color(I), label="I")
         plot!(right, 1:t, Rs, color=color(R), label="R")
-    
+   
         plot(left, right)
-    end
+	end
 end
 
 # ╔═╡ 2031246c-0a45-11eb-18d3-573f336044bf
@@ -684,13 +687,39 @@ md"""
 """
 
 # ╔═╡ 63dd9478-0a45-11eb-2340-6d3d00f9bb5f
-causes_outbreak = CollisionInfectionRecovery(0.5, 0.001)
+causes_outbreak = CollisionInfectionRecovery(0.91, 1e-9)
 
 # ╔═╡ 269955e4-0a46-11eb-02cc-1946dc918bfa
-does_not_cause_outbreak = CollisionInfectionRecovery(0.5, 0.001)
+does_not_cause_outbreak = CollisionInfectionRecovery(0.91, 1e-5)
 
 # ╔═╡ 4d4548fe-0a66-11eb-375a-9313dc6c423d
-
+let
+	N = 100
+	L = 20
+	k_sweeps = 50
+	T_max = 100
+	
+	agents = initialize(N, L)
+	
+	# compute k_sweep_max number of sweeps and plot the SIR
+	Ss, Is, Rs = Int[], Int[], Int[]
+	for t in 1:T_max
+		for i in 1:k_sweeps*N
+			step!(agents, L, does_not_cause_outbreak)
+		end
+		S_current = sum(is_susceptible.(agents))
+		I_current = sum(is_infected.(agents))
+		R_current = N - (S_current + I_current)
+		push!(Ss, S_current)
+		push!(Is, I_current)
+		push!(Rs, R_current)
+	end
+	
+	p = plot(xguide="step", yguide="number of agents")
+	plot!(p, Ss, label='S', c=color(S))
+	plot!(p, Is, label='I', c=color(I))
+	plot!(p, Rs, label='R', c=color(R))
+end
 
 # ╔═╡ 20477a78-0a45-11eb-39d7-93918212a8bc
 md"""
