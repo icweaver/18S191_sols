@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.11.14
+# v0.12.4
 
 using Markdown
 using InteractiveUtils
@@ -66,6 +66,12 @@ begin
 	Pkg.add("PlutoUI")
 	using PlutoUI
 end
+
+# ╔═╡ 7cabda00-0eed-11eb-3667-fbefdedb0c3f
+# begin
+# 	import DarkMode
+# 	DarkMode.enable(theme="yonce")
+# end
 
 # ╔═╡ 67461396-ee0a-11ea-3679-f31d46baa9b4
 md"_We set up Images.jl again:_"
@@ -235,11 +241,6 @@ md"""
 """
 
 # ╔═╡ f6898df6-ee07-11ea-2838-fde9bc739c11
-@doc raw"""
-	mean_colors(image)
-
-Takes an $m \times n$ `image`, lines up all the pixels into a single column of length $mn$, converts this into an $mn \times 3$ `RGB` matrix, and returns the average in each column.
-"""
 function mean_colors(image)
 	A = sum(image) / length(image)
 	return (A.r, A.g, A.b)
@@ -386,6 +387,12 @@ decimate(image, ratio=5) = image[1:ratio:end, 1:ratio:end]
 philip = let
 	original = Images.load(philip_file)
 	decimate(original, 8)
+end
+
+# ╔═╡ bebc47e0-0eed-11eb-17ee-b7c89888669c
+with_terminal() do
+	@show mean_colors(philip)
+	@btime mean_colors($philip)
 end
 
 # ╔═╡ 9751586e-ee0c-11ea-0cbb-b7eda92977c9
@@ -1420,6 +1427,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═911ccbce-ed68-11ea-3606-0384e7580d7c
 # ╟─5f95e01a-ee0a-11ea-030c-9dba276aba92
 # ╠═65780f00-ed6b-11ea-1ecf-8b35523a7ac0
+# ╠═7cabda00-0eed-11eb-3667-fbefdedb0c3f
 # ╟─67461396-ee0a-11ea-3679-f31d46baa9b4
 # ╠═74b008f6-ed6b-11ea-291f-b3791d6d1b35
 # ╟─54056a02-ee0a-11ea-101f-47feb6623bec
@@ -1461,6 +1469,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═c8ecfe5c-ee05-11ea-322b-4b2714898831
 # ╟─e86ed944-ee05-11ea-3e0f-d70fc73b789c
 # ╟─c54ccdea-ee05-11ea-0365-23aaf053b7d7
+# ╠═bebc47e0-0eed-11eb-17ee-b7c89888669c
 # ╠═f6898df6-ee07-11ea-2838-fde9bc739c11
 # ╟─4d0158d0-ee0d-11ea-17c3-c169d4284acb
 # ╟─f68d4a36-ee07-11ea-0832-0360530f102e
