@@ -419,32 +419,9 @@ function sample_text(A, n)
 	String(alphabet[indices])
 end
 
-# ╔═╡ 3ab86ed6-0ef9-11eb-17f0-3f0fc890fd4b
-map(x->begin
-           if x < 0 && iseven(x)
-               return 0
-           elseif x == 0
-               return 1
-           else
-               return x
-           end
-       end,
-    [-6, 7, 8, 0])
-
-# ╔═╡ eb656a0e-0ef9-11eb-069c-f9df25449b66
-with_terminal() do
-	reduce([-6, 7, 8, 0]) do x, _
-		if x < 0 && iseven(x)
-			println("1: $x")
-			return 0
-		elseif x == 0
-			println("2: $x")
-			return 1
-		else
-			println("3: $x")
-			return x
-		end
-	end
+# ╔═╡ e75528f4-0f57-11eb-2308-514737aa6212
+reduce(1:5, init=) do x, _
+	[x..., 2]
 end
 
 # ╔═╡ 141af892-f933-11ea-1e5f-154167642809
@@ -1313,10 +1290,9 @@ bigbreak
 # ╟─4e8d327e-f9b0-11ea-3f16-c178d96d07d9
 # ╟─489b03d4-f9b0-11ea-1de0-11d4fe4e7c69
 # ╟─d83f8bbc-f9af-11ea-2392-c90e28e96c65
-# ╟─fd202410-f936-11ea-1ad6-b3629556b3e0
+# ╠═fd202410-f936-11ea-1ad6-b3629556b3e0
 # ╠═0e465160-f937-11ea-0ebb-b7e02d71e8a8
-# ╠═3ab86ed6-0ef9-11eb-17f0-3f0fc890fd4b
-# ╠═eb656a0e-0ef9-11eb-069c-f9df25449b66
+# ╠═e75528f4-0f57-11eb-2308-514737aa6212
 # ╟─6718d26c-f9b0-11ea-1f5a-0f22f7ddffe9
 # ╟─141af892-f933-11ea-1e5f-154167642809
 # ╟─7eed9dde-f931-11ea-38b0-db6bfcc1b558

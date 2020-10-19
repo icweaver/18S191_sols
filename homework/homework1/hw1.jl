@@ -389,12 +389,6 @@ philip = let
 	decimate(original, 8)
 end
 
-# ╔═╡ bebc47e0-0eed-11eb-17ee-b7c89888669c
-with_terminal() do
-	@show mean_colors(philip)
-	@btime mean_colors($philip)
-end
-
 # ╔═╡ 9751586e-ee0c-11ea-0cbb-b7eda92977c9
 quantize(philip)
 
@@ -1469,7 +1463,6 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═c8ecfe5c-ee05-11ea-322b-4b2714898831
 # ╟─e86ed944-ee05-11ea-3e0f-d70fc73b789c
 # ╟─c54ccdea-ee05-11ea-0365-23aaf053b7d7
-# ╠═bebc47e0-0eed-11eb-17ee-b7c89888669c
 # ╠═f6898df6-ee07-11ea-2838-fde9bc739c11
 # ╟─4d0158d0-ee0d-11ea-17c3-c169d4284acb
 # ╟─f68d4a36-ee07-11ea-0832-0360530f102e
@@ -1571,7 +1564,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╟─7c50ea80-ee15-11ea-328f-6b4e4ff20b7e
 # ╠═aad67fd0-ee15-11ea-00d4-274ec3cda3a3
 # ╟─8ae59674-ee18-11ea-3815-f50713d0fa08
-# ╟─94c0798e-ee18-11ea-3212-1533753eabb6
+# ╠═94c0798e-ee18-11ea-3212-1533753eabb6
 # ╠═a75701c4-ee18-11ea-2863-d3042e71a68b
 # ╠═f461f5f2-ee18-11ea-3d03-95f57f9bf09e
 # ╟─7c6642a6-ee15-11ea-0526-a1aac4286cdd
