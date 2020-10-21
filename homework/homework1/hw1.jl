@@ -13,6 +13,9 @@ macro bind(def, element)
     end
 end
 
+# ╔═╡ 46acee1c-125b-11eb-381c-975a86ce388c
+using BenchmarkTools
+
 # ╔═╡ 83eb9ca0-ed68-11ea-0bc5-99a09c68f867
 md"_homework 1, version 4_"
 
@@ -68,10 +71,10 @@ begin
 end
 
 # ╔═╡ 7cabda00-0eed-11eb-3667-fbefdedb0c3f
-# begin
-# 	import DarkMode
-# 	DarkMode.enable(theme="yonce")
-# end
+begin
+	import DarkMode
+	DarkMode.enable(theme="yonce")
+end
 
 # ╔═╡ 67461396-ee0a-11ea-3679-f31d46baa9b4
 md"_We set up Images.jl again:_"
@@ -718,6 +721,34 @@ function convolve_image(M::AbstractMatrix, K::AbstractMatrix)
  	return M′
 end
 
+# ╔═╡ 6eefcd16-1258-11eb-3341-cbba70b0309b
+function convolve_image2(M::AbstractMatrix, K::AbstractMatrix)
+    rowsK, colsK = size(K)
+    rowsM, colsM = size(M)
+    N = fill(RGB(0.0,0.0,0.0),size(M)) #fill(convert(typeof(M[1,1]),0), rowsM, colsM)
+    κ = (rowsK - 1) ÷ 2
+    λ = (colsK - 1) ÷ 2
+    for i in 1:rowsM
+        for j in 1:colsM
+            for k in 1:rowsK
+                for l in 1:colsK
+                    N[i,j] += extend_mat(M, (i-κ+k-1), (j-λ+l-1)) * extend_mat(K, k, l)
+                end
+            end
+        end
+    end            
+    return N
+end
+
+# ╔═╡ 3215d49a-1259-11eb-1078-dd138ec4eb19
+typeof(convert(typeof(philip[1,1]), 0))
+
+# ╔═╡ 560bac08-1259-11eb-3194-535deac7e839
+typeof(RGB(0.0, 0.0, 0.0))
+
+# ╔═╡ 5caf2346-1259-11eb-0649-352609f6d63b
+typeof(RGB(0, 0, 0))
+
 # ╔═╡ 5a5135c6-ee1e-11ea-05dc-eb0c683c2ce5
 md"_Let's test it out! 🎃_"
 
@@ -734,11 +765,24 @@ test_image_with_border = [get(small_image, (i, j), Gray(0)) for (i,j) in Iterato
 # ╔═╡ fd904022-fd57-11ea-3b13-63519fed2f70
 convolve_image(test_image_with_border, K_test)
 
+# ╔═╡ 75689c10-1258-11eb-066d-771d08337e56
+convolve_image2(test_image_with_border, K_test)
+
 # ╔═╡ 6e53c2e6-ee1e-11ea-21bd-c9c05381be07
 md"_Edit_ `K_test` _to create your own test case!_"
 
 # ╔═╡ d5e244d2-fd4b-11ea-3758-0f6caf6a6455
 convolve_image(philip, K_test)
+
+# ╔═╡ 4a9c560e-125b-11eb-3664-9730058e86fc
+with_terminal() do
+	@btime convolve_image($philip, $K_test)
+end
+
+# ╔═╡ 3c318198-125b-11eb-38bd-dd123fd92f82
+with_terminal() do
+	@btime convolve_image2($philip, $K_test)
+end
 
 # ╔═╡ 8a335044-ee19-11ea-0255-b9391246d231
 md"""
@@ -1476,7 +1520,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═63e8d636-ee0b-11ea-173d-bd3327347d55
 # ╠═591dd8b0-fd11-11ea-2cbe-cde4e4ec7f14
 # ╟─2cc2f84e-ee0d-11ea-373b-e7ad3204bb00
-# ╟─b8f26960-ee0a-11ea-05b9-3f4bc1099050
+# ╠═b8f26960-ee0a-11ea-05b9-3f4bc1099050
 # ╠═5de3a22e-ee0b-11ea-230f-35df4ca3c96d
 # ╠═4e21e0c4-ee0b-11ea-3d65-b311ae3f98e9
 # ╠═6dbf67ce-ee0b-11ea-3b71-abc05a64dc43
@@ -1550,16 +1594,24 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╟─d06ea762-ee27-11ea-2e9c-1bcff86a3fe0
 # ╠═e1dc0622-ee16-11ea-274a-3b6ec9e15ab5
 # ╟─efd1ceb4-ee1c-11ea-350e-f7e3ea059024
-# ╟─3cd535e4-ee26-11ea-2482-fb4ad43dda19
+# ╠═3cd535e4-ee26-11ea-2482-fb4ad43dda19
 # ╟─7c41f0ca-ee15-11ea-05fb-d97a836659af
 # ╠═f75b4858-fd2e-11ea-1cb3-b552a32269f3
+# ╠═6eefcd16-1258-11eb-3341-cbba70b0309b
+# ╠═3215d49a-1259-11eb-1078-dd138ec4eb19
+# ╠═560bac08-1259-11eb-3194-535deac7e839
+# ╠═5caf2346-1259-11eb-0649-352609f6d63b
 # ╟─0cabed84-ee1e-11ea-11c1-7d8a4b4ad1af
 # ╟─5a5135c6-ee1e-11ea-05dc-eb0c683c2ce5
 # ╠═275a99c8-ee1e-11ea-0a76-93e3618c9588
 # ╠═577c6daa-ee1e-11ea-1275-b7abc7a27d73
 # ╠═fd904022-fd57-11ea-3b13-63519fed2f70
+# ╠═75689c10-1258-11eb-066d-771d08337e56
 # ╟─6e53c2e6-ee1e-11ea-21bd-c9c05381be07
 # ╠═d5e244d2-fd4b-11ea-3758-0f6caf6a6455
+# ╠═4a9c560e-125b-11eb-3664-9730058e86fc
+# ╠═3c318198-125b-11eb-38bd-dd123fd92f82
+# ╠═46acee1c-125b-11eb-381c-975a86ce388c
 # ╟─8a335044-ee19-11ea-0255-b9391246d231
 # ╟─7c50ea80-ee15-11ea-328f-6b4e4ff20b7e
 # ╠═aad67fd0-ee15-11ea-00d4-274ec3cda3a3

@@ -29,6 +29,9 @@ begin
 	using PlutoUI
 end
 
+# ╔═╡ c18d0ba6-1228-11eb-0c8f-c374c0af7d7d
+using BenchmarkTools
+
 # ╔═╡ 19fe1ee8-0970-11eb-2a0d-7d25e7d773c6
 md"_homework 5, version 0_"
 
@@ -365,6 +368,12 @@ let
 	p
 end
 
+# ╔═╡ 9f916aa6-1228-11eb-35a6-fba5eb12ad21
+with_terminal() do
+	start = Coordinate(4,4)
+	@btime trajectory($start, 10, 10)
+end
+
 # ╔═╡ 3ed06c80-0954-11eb-3aee-69e4ccdc4f9d
 md"""
 ## **Exercise 2:** _Wanderering Agents_
@@ -677,6 +686,14 @@ let
         plot!(right, 1:t, Rs, color=color(R), label="R")
    
         plot(left, right)
+	end
+end
+
+# ╔═╡ 771a5670-1229-11eb-3e15-a1ec576b03fb
+begin
+	p = plot(1)
+	anim = @animate for x=0:0.1:5
+		push!(p, 1, sin(x))
 	end
 end
 
@@ -1151,6 +1168,8 @@ bigbreak
 # ╟─b4ed2362-09a0-11eb-0be9-99c91623b28f
 # ╠═0665aa3e-0a69-11eb-2b5d-cd718e3c7432
 # ╠═5132461c-0c12-11eb-2fde-7f1fd66555ad
+# ╠═9f916aa6-1228-11eb-35a6-fba5eb12ad21
+# ╠═c18d0ba6-1228-11eb-0c8f-c374c0af7d7d
 # ╟─ed2d616c-0a66-11eb-1839-edf8d15cf82a
 # ╟─3ed06c80-0954-11eb-3aee-69e4ccdc4f9d
 # ╠═35537320-0a47-11eb-12b3-931310f18dec
@@ -1189,6 +1208,7 @@ bigbreak
 # ╟─8475baf0-0a63-11eb-1207-23f789d00802
 # ╟─201a3810-0a45-11eb-0ac9-a90419d0b723
 # ╠═a1d1cb3a-0d64-11eb-1dc9-556f26360c87
+# ╠═771a5670-1229-11eb-3e15-a1ec576b03fb
 # ╟─f9b9e242-0a53-11eb-0c6a-4d9985ef1687
 # ╟─2031246c-0a45-11eb-18d3-573f336044bf
 # ╠═63dd9478-0a45-11eb-2340-6d3d00f9bb5f
