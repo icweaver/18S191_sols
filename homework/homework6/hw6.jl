@@ -27,6 +27,9 @@ begin
 	using PlutoUI
 end
 
+# ╔═╡ 3e6ed55a-13eb-11eb-29a0-c15dfbc05737
+using BenchmarkTools
+
 # ╔═╡ 048890ee-106a-11eb-1a81-5744150543e8
 md"_homework 6, version 0_"
 
@@ -77,7 +80,7 @@ Feel free to ask questions!
 # ╔═╡ 0587db1c-106a-11eb-0560-c3d53c516805
 # edit the code below to set your name and kerberos ID (i.e. email without @mit.edu)
 
-student = (name = "Jazzy Doe", kerberos_id = "jazz")
+student = (name = "Ian Weaver", kerberos_id = "hahvard")
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll around the page to see what's up
@@ -90,6 +93,12 @@ Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 
 # ╔═╡ 05976f0c-106a-11eb-03a4-0febbc18fae8
 md"_Let's create a package environment:_"
+
+# ╔═╡ 557b0f80-13db-11eb-349b-ddb84526c5d9
+begin
+	import DarkMode
+	DarkMode.enable(theme="yonce")
+end
 
 # ╔═╡ 0d191540-106e-11eb-1f20-bf72a75fb650
 md"""
@@ -140,9 +149,17 @@ md"""
 """
 
 # ╔═╡ d217a4b6-12e8-11eb-29ce-53ae143a39cd
+@doc raw"""
+	finite_difference_slope(f, a, h)
+
+Returns the finite difference approximation of the derivative.
+```math
+f'(a) \simeq \frac{f(a + h) - f(a)}{h}
+```
+"""
 function finite_difference_slope(f::Function, a, h=1e-3)
-	
-	return missing
+	num, denom = f(a + h) - f(a), h
+	(f(a + h) - f(a)) / h
 end
 
 # ╔═╡ f0576e48-1261-11eb-0579-0b1372565ca7
@@ -150,13 +167,18 @@ finite_difference_slope(sqrt, 4.0, 5.0)
 
 # ╔═╡ bf8a4556-112b-11eb-042e-d705a2ca922a
 md"""
-👉 Write a function `tangent_line` that takes the same arguments `f`, `a` and `g`, but it **returns a function**. This function (``\mathbb{R} \rightarrow \mathbb{R}``) is the _tangent line_ with slope ``f'(a)`` (computed using `finite_difference_slope`) that passes through ``(a, f(a))``.
+👉 Write a function `tangent_line` that takes the same arguments `f`, `a` and `h`, but it **returns a function**. This function (``\mathbb{R} \rightarrow \mathbb{R}``) is the _tangent line_ with slope ``f'(a)`` (computed using `finite_difference_slope`) that passes through ``(a, f(a))``.
 """
 
 # ╔═╡ cbf0a27a-12e8-11eb-379d-85550b942ceb
+@doc raw"""
+	tangent_line(f, a, h)
+
+Returns the tangent line function ``\phi``, where ``\phi(x) = mx + f(a)``, with slope ``m`` given by ``m =`` `finite_difference_slope(f, a , h)`
+"""
 function tangent_line(f, a, h)
-	
-	return missing
+	ϕ = x -> finite_difference_slope(f, a, h)*(x - a) + f(a)
+	return ϕ
 end
 
 # ╔═╡ 2b79b698-10b9-11eb-3bde-53fc1c48d5f7
@@ -175,6 +197,11 @@ Notice that, as you decrease ``h``, the tangent line gets more accurate, but wha
 
 # ╔═╡ 7495af52-10ba-11eb-245f-a98781ba123c
 h_finite_diff = 10.0^log_h
+
+# ╔═╡ e96f2fc4-13e4-11eb-0617-912d0f0dcfcc
+md"""
+If $h$ is too small, we run into numerical overflow and the slope remains fixed at 0
+"""
 
 # ╔═╡ 327de976-10b9-11eb-1916-69ad75fc8dc4
 zeroten = LinRange(0.0, 10.0, 300);
@@ -217,25 +244,30 @@ Using this formula, we only need to know the _value_ ``f(a)`` and the _slope_ ``
 """
 
 # ╔═╡ fa320028-12c4-11eb-0156-773e2aba8e58
-function euler_integrate_step(fprime::Function, fa::Number, 
-		a::Number, h::Number)
-	
-	return missing
+function euler_integrate_step(fprime::Function, fa::Number, a::Number, h::Number)
+	h*fprime(a + h) + fa
 end
 
 # ╔═╡ 2335cae6-112f-11eb-3c2c-254e82014567
 md"""
-👉 Write a function `euler_integrate` that takes takes a known function ``f'``, the initial value ``f(a)`` and a range `T` with `a == first(T)` and `h == step(T)`. It applies the function `euler_integrate_step` repeatedly, once per entry in `T`, to produce the sequence of values ``f(a+h)``, ``f(a+2h)``, etc.
+👉 Write a function `euler_integrate` that takes a known function ``f'``, the initial value ``f(a)`` and a range `T` with `a == first(T)` and `h == step(T)`. It applies the function `euler_integrate_step` repeatedly, once per entry in `T`, to produce the sequence of values ``f(a+h)``, ``f(a+2h)``, etc.
 """
 
 # ╔═╡ fff7754c-12c4-11eb-2521-052af1946b66
-function euler_integrate(fprime::Function, fa::Number, 
-		T::AbstractRange)
-	
-	a0 = T[1]
+function euler_integrate(fprime::Function, fa::Number, T::AbstractRange)
+	a0 = first(T)
 	h = step(T)
+	a = a0
+	fa_new = fa
+	fs = Number[]
+	for t in T
+		f = euler_integrate_step(fprime, fa_new, a, h)
+		fa_new = f
+		a += h
+		push!(fs, f)
+	end
 	
-	return missing
+	return fs
 end
 
 # ╔═╡ 4d0efa66-12c6-11eb-2027-53d34c68d5b0
@@ -249,8 +281,14 @@ We already know the analytical solution ``f(x) = x^3``, so the result should be 
 euler_test = let
 	fprime(x) = 3x^2
 	T = 0 : 0.1 : 10
-	
 	euler_integrate(fprime, 0, T)
+end
+
+# ╔═╡ 4a0af1d4-13e9-11eb-3c1c-71e279163c70
+with_terminal() do
+	fprime(x) = 3x^2
+	T = 0 : 0.1 : 10
+	@btime euler_integrate($fprime, 0, $T)
 end
 
 # ╔═╡ ab72fdbe-10be-11eb-3b33-eb4ab41730d6
@@ -1233,12 +1271,13 @@ end
 # ╟─0565af4c-106a-11eb-0d38-2fb84493d86f
 # ╟─056ed7f2-106a-11eb-3543-31a5cb560e80
 # ╟─0579e962-106a-11eb-26b5-2160f461f4cc
-# ╠═0587db1c-106a-11eb-0560-c3d53c516805
+# ╟─0587db1c-106a-11eb-0560-c3d53c516805
 # ╟─05976f0c-106a-11eb-03a4-0febbc18fae8
+# ╠═557b0f80-13db-11eb-349b-ddb84526c5d9
 # ╠═05b01f6e-106a-11eb-2a88-5f523fafe433
 # ╟─0d191540-106e-11eb-1f20-bf72a75fb650
 # ╟─3cd69418-10bb-11eb-2fb5-e93bac9e54a9
-# ╟─17af6a00-112b-11eb-1c9c-bfd12931491d
+# ╠═17af6a00-112b-11eb-1c9c-bfd12931491d
 # ╟─2a4050f6-112b-11eb-368a-f91d7a023c9d
 # ╠═d217a4b6-12e8-11eb-29ce-53ae143a39cd
 # ╠═f0576e48-1261-11eb-0579-0b1372565ca7
@@ -1253,6 +1292,7 @@ end
 # ╟─a732bbcc-112c-11eb-1d65-110c049e226c
 # ╟─c9535ad6-10b9-11eb-0537-45f13931cd71
 # ╟─7495af52-10ba-11eb-245f-a98781ba123c
+# ╟─e96f2fc4-13e4-11eb-0617-912d0f0dcfcc
 # ╟─327de976-10b9-11eb-1916-69ad75fc8dc4
 # ╟─43df67bc-10bb-11eb-1cbd-cd962a01e3ee
 # ╠═d5a8bd48-10bf-11eb-2291-fdaaff56e4e6
@@ -1265,6 +1305,8 @@ end
 # ╠═fff7754c-12c4-11eb-2521-052af1946b66
 # ╟─4d0efa66-12c6-11eb-2027-53d34c68d5b0
 # ╠═b74d94b8-10bf-11eb-38c1-9f39dfcb1096
+# ╠═4a0af1d4-13e9-11eb-3c1c-71e279163c70
+# ╠═3e6ed55a-13eb-11eb-29a0-c15dfbc05737
 # ╟─15b50428-1264-11eb-163e-23e2f3590502
 # ╟─ab72fdbe-10be-11eb-3b33-eb4ab41730d6
 # ╟─990236e0-10be-11eb-333a-d3080a224d34
