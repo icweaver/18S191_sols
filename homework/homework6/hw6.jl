@@ -23,6 +23,8 @@ begin
 			])
 
 	using Plots
+	theme(:juno)
+	default(msw=0)
 	gr()
 	using PlutoUI
 end
@@ -258,11 +260,14 @@ function euler_integrate(fprime::Function, fa::Number, T::AbstractRange)
 	a0 = first(T)
 	h = step(T)
 	a = a0
-	fa_new = fa
+	f = fa
 	fs = Number[]
+	ein = (f, a) -> euler_integrate_step(fprime, f, a, h)
 	for t in T
-		f = euler_integrate_step(fprime, fa_new, a, h)
-		fa_new = f
+		# Take a step
+		f = ein(f, a)
+		
+		# Update
 		a += h
 		push!(fs, f)
 	end
@@ -285,11 +290,11 @@ euler_test = let
 end
 
 # ╔═╡ 4a0af1d4-13e9-11eb-3c1c-71e279163c70
-with_terminal() do
-	fprime(x) = 3x^2
-	T = 0 : 0.1 : 10
-	@btime euler_integrate($fprime, 0, $T)
-end
+# with_terminal() do
+# 	fprime(x) = 3x^2
+# 	T = 0 : 0.1 : 10
+# 	@btime euler_integrate($fprime, 0, $T)
+# end
 
 # ╔═╡ ab72fdbe-10be-11eb-3b33-eb4ab41730d6
 @bind N_euler Slider(2:40)
@@ -338,9 +343,9 @@ function euler_SIR_step(β, γ, sir_0::Vector, h::Number)
 	s, i, r = sir_0
 	
 	return [
-		missing,
-		missing,
-		missing,
+		s - h*β*s*i,
+		i + h*(β*s*i - γ*i),
+		r + h*γ*i,
 	]
 end
 
@@ -360,10 +365,17 @@ You should return a vector of vectors: a 3-element vector for each point in time
 function euler_SIR(β, γ, sir_0::Vector, T::AbstractRange)
 	# T is a range, you get the step size and number of steps like so:
 	h = step(T)
-	
 	num_steps = length(T)
+	sir_current = sir_0
+	euler_steps = sir -> euler_SIR_step(β, γ, sir, h)
 	
-	return missing
+	SIRS = []
+	for n in 1:num_steps
+		push!(SIRS, sir_current)
+		sir_current = euler_steps(sir_current)
+	end
+	
+	return SIRS
 end
 
 # ╔═╡ 4b791b76-12cd-11eb-1260-039c938f5443
@@ -402,7 +414,7 @@ md"""
 
 # ╔═╡ 589b2b4c-1245-11eb-1ec7-693c6bda97c4
 default_SIR_parameters_observation = md"""
-blabla
+Nope, ``I`` peaks then goes back to zero.
 """
 
 # ╔═╡ 58b45a0e-1245-11eb-04d1-23a1f3a0f242
@@ -410,8 +422,25 @@ md"""
 👉 Make an interactive visualization in which you vary $\beta$ and $\gamma$. What relation should $\beta$ and $\gamma$ have for an epidemic outbreak to occur?
 """
 
-# ╔═╡ 68274534-1103-11eb-0d62-f1acb57721bc
+# ╔═╡ c1c88f14-13fc-11eb-2ae7-75790d69196a
+md"""
+I guess ``\beta > \gamma`` so that the rate of people getting infected will outpace the rate of those that recover?
+"""
 
+# ╔═╡ cd091e10-13fa-11eb-1769-cfe9923c359a
+md"""
+``\beta =`` $(@bind β Slider(0:0.1:1, show_value=true))
+``\gamma =`` $(@bind γ Slider(0:0.1:1, show_value=true))
+"""
+
+# ╔═╡ bb8f5f88-13f9-11eb-1f9c-3f084732a7fa
+let
+	sir_T = 0 : 0.1 : 100.0
+	sir_results = euler_SIR(β, γ, 
+	[0.99, 0.01, 0.00], 
+	sir_T)
+	plot_sir!(plot(), sir_T, sir_results)
+end
 
 # ╔═╡ 82539bbe-106e-11eb-0e9e-170dfa6a7dad
 md"""
@@ -432,11 +461,17 @@ You should use **anonymous functions** for this. These have the form `x -> x^2`,
 
 """
 
+# ╔═╡ 6f8f44e4-1409-11eb-0ea1-01e1fcb3dc29
+finite_difference_slope((x, y) -> x^2 + y, 3)
+
 # ╔═╡ bd8522c6-12e8-11eb-306c-c764f78486ef
 function ∂x(f::Function, a, b)
-	
-	return missing
+	f_x = x -> f(x, b)
+	return finite_difference_slope(f_x, a)
 end
+
+# ╔═╡ 9358247c-1409-11eb-2f85-511553e98c34
+
 
 # ╔═╡ 321964ac-126d-11eb-0a04-0d3e3fb9b17c
 ∂x(
@@ -446,9 +481,12 @@ end
 
 # ╔═╡ b7d3aa8c-12e8-11eb-3430-ff5d7df6a122
 function ∂y(f::Function, a, b)
-	
-	return missing
+	f_y = y -> f(a, y)
+	return finite_difference_slope(f_y, b)
 end
+
+# ╔═╡ e9a7b48c-1409-11eb-3dea-8fc751c909a9
+f(x, y) = x^2 + y
 
 # ╔═╡ a15509ee-126c-11eb-1fa3-cdda55a47fcb
 ∂y(
@@ -464,8 +502,7 @@ md"""
 
 # ╔═╡ adbf65fe-12e8-11eb-04e9-3d763ba91a63
 function gradient(f::Function, a, b)
-	
-	return missing
+	[∂x(f, a, b), ∂y(f, a, b)]
 end
 
 # ╔═╡ 66b8e15e-126c-11eb-095e-39c2f6abc81d
@@ -492,8 +529,8 @@ We want to minimize a 1D function, i.e. a function $f: \mathbb{R} \to \mathbb{R}
 
 # ╔═╡ a7f1829c-12e8-11eb-15a1-5de40ed92587
 function gradient_descent_1d_step(f, x0; η=0.01)
-	
-	return missing
+	f′ = finite_difference_slope(f, x0, η)
+	return -η*f′
 end
 
 # ╔═╡ d33271a2-12df-11eb-172a-bd5600265f49
@@ -516,13 +553,18 @@ md"""
 """
 
 # ╔═╡ 9489009a-12e8-11eb-2fb7-97ba0bdf339c
-function gradient_descent_1d(f, x0; η=0.01, N_steps=1000)
+function gradient_descent_1d(f, x0; η=0.01, N_steps=5)
+	x = x0
+	for _ in 1:N_steps
+		@show x
+		x = gradient_descent_1d_step(f, x, η=η)
+	end
 	
-	return missing
+	return x
 end
 
 # ╔═╡ 34dc4b02-1248-11eb-26b2-5d2610cfeb41
-let
+with_terminal() do
 	f = x -> (x - 5)^2 - 3
 	# minimum should be at x = 5
 	gradient_descent_1d(f, 0.0)
@@ -1085,14 +1127,19 @@ as_svg = as_mime(MIME"image/svg+xml"())
 # ╔═╡ 3d44c264-10b9-11eb-0895-dbfc22ba0c37
 let
 	p = plot(zeroten, wavy, label="f(x)")
-	scatter!(p, [a_finite_diff], [wavy(a_finite_diff)], label="a", color="red")
-	vline!(p, [a_finite_diff], label=nothing, color="red", linestyle=:dash)
-	scatter!(p, [a_finite_diff+h_finite_diff], [wavy(a_finite_diff+h_finite_diff)], label="a + h", color="green")
+	scatter!(p, [a_finite_diff], [wavy(a_finite_diff)], label="a")
+	vline!(p, [a_finite_diff], label=nothing, linestyle=:dash)
+	scatter!(
+		p,
+		[a_finite_diff+h_finite_diff],
+		[wavy(a_finite_diff+h_finite_diff)],
+		label="a + h",
+	)
 	
 	try
 		result = tangent_line(wavy, a_finite_diff, h_finite_diff)
 		
-		plot!(p, zeroten, result, label="tangent", color="purple")
+		plot!(p, zeroten, result, label="tangent")
 	catch
 	end
 	
@@ -1104,11 +1151,11 @@ let
 	slope = wavy_deriv(a_euler)
 	
 	p = plot(LinRange(1.0 - 0.1, 1.0 + 0.1, 2), wavy, label=nothing, lw=3)
-	scatter!(p, [1], wavy, label="f(1)", color="blue", lw=3)
+	scatter!(p, [1], wavy, label="f(1)", lw=3)
 	# p = plot()
 	x = [a_euler - 0.2,a_euler + 0.2]
 	for y in -4:10
-		plot!(p, x, slope .* (x .- a_euler) .+ y, label=nothing, color="purple", opacity=.6)
+		plot!(p, x, slope .* (x .- a_euler) .+ y, label=nothing, opacity=.6)
 	end
 	
 	vline!(p, [a_euler], color="red", label="a", linestyle=:dash)
@@ -1124,24 +1171,23 @@ let
 	
 	slope = wavy_deriv(a_euler)
 	
-	p = plot(zeroten, wavy, label="exact solution", lw=3, opacity=.1, color="gray")
+	p = plot(zeroten, wavy, label="exact solution", lw=3, opacity=.25)
 	# p = plot()
 	
 	last_a = a + (N_euler-1)*h
 	
-	vline!(p, [last_a], color="red", label="a", linestyle=:dash)
+	vline!(p, [last_a], label="a", linestyle=:dash)
 
 	try
 		plot!(p, a .+ h .* (1:N_euler), history, 
-			color="blue", label=nothing)
+			label=nothing)
 		scatter!(p, a .+ h .* (1:N_euler), history, 
-			color="blue", label="appromixation", 
+			label="appromixation", 
 			markersize=2, markerstrokewidth=0)
 
 		
 		plot!(p, [0,10], ([0,10] .- (last_a+h)) .* wavy_deriv(last_a+h) .+ history[end],
-			label="tangent",
-			color="purple")
+			label="tangent")
 
 	catch
 	end
@@ -1322,15 +1368,20 @@ end
 # ╟─58675b3c-1245-11eb-3548-c9cb8a6b3188
 # ╟─b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
 # ╟─586d0352-1245-11eb-2504-05d0aa2352c6
-# ╠═589b2b4c-1245-11eb-1ec7-693c6bda97c4
+# ╟─589b2b4c-1245-11eb-1ec7-693c6bda97c4
 # ╟─58b45a0e-1245-11eb-04d1-23a1f3a0f242
-# ╠═68274534-1103-11eb-0d62-f1acb57721bc
+# ╟─c1c88f14-13fc-11eb-2ae7-75790d69196a
+# ╟─cd091e10-13fa-11eb-1769-cfe9923c359a
+# ╠═bb8f5f88-13f9-11eb-1f9c-3f084732a7fa
 # ╟─82539bbe-106e-11eb-0e9e-170dfa6a7dad
 # ╟─b394b44e-1245-11eb-2f86-8d10113e8cfc
+# ╠═6f8f44e4-1409-11eb-0ea1-01e1fcb3dc29
 # ╠═bd8522c6-12e8-11eb-306c-c764f78486ef
+# ╠═9358247c-1409-11eb-2f85-511553e98c34
 # ╠═321964ac-126d-11eb-0a04-0d3e3fb9b17c
 # ╟─5ea6c1f0-126c-11eb-3963-c98548f0b36e
 # ╠═b7d3aa8c-12e8-11eb-3430-ff5d7df6a122
+# ╠═e9a7b48c-1409-11eb-3dea-8fc751c909a9
 # ╠═a15509ee-126c-11eb-1fa3-cdda55a47fcb
 # ╟─c82b2148-126c-11eb-1c03-c157c9bd7eba
 # ╟─b398a29a-1245-11eb-1476-ab65e92d1bc8
