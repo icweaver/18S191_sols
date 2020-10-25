@@ -20,6 +20,7 @@ begin
 	Pkg.add([
 			Pkg.PackageSpec(name="PlutoUI", version="0.6.7-0.6"), 
 			Pkg.PackageSpec(name="Plots", version="1.6-1"),
+			Pkg.PackageSpec(name="PlotlyBase"),
 			])
 
 	using Plots
@@ -645,7 +646,52 @@ We also prepared a 3D visualisation if you like! It's a bit slow...
 """
 
 # ╔═╡ 605aafa4-12e7-11eb-2d13-7f7db3fac439
-run_3d_visualisation = false
+run_3d_visualisation = true
+
+# ╔═╡ 24e6add6-16d1-11eb-1102-e7ecceeed9e0
+plot([1,2,3])
+
+# ╔═╡ 5e0f16b4-12e3-11eb-212f-e565f97adfed
+function gradient_2d_viz_3d(N_gradient_2d, x0, y0)
+
+	history = accumulate(1:N_gradient_2d, init=[x0, y0]) do old, _
+		gradient_descent_2d_step(himmelbau, old...)
+	end
+	
+	all = [[x0, y0], history...]
+	
+	p = Plots.surface(-4:0.4:5, -4:0.4:4, himmelbau)
+	
+	trace = [himmelbau(s...) for s in all]
+	
+	plot!(p, first.(all), last.(all), trace, 
+		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
+	scatter!(p, first.(all), last.(all), trace, 
+		color="blue", label="gradient descent", 
+		markersize=3, markerstrokewidth=0)
+	
+	#as_svg(p)
+end
+
+# ╔═╡ 9ae4ebac-12e3-11eb-0acc-23113f5264a9
+if run_3d_visualisation
+	let
+		# we temporarily change the plotting backend to an interactive one
+		using PlotlyBase
+		plotly()
+
+		# we dont use the sliders because this plot is quite slow
+		x0 = 0.5
+		N = 20
+		y0 = -3
+
+		p = gradient_2d_viz_3d(N, x0, y0)
+		
+		gr()
+		
+		p
+	end
+end
 
 # ╔═╡ a03890d6-1248-11eb-37ee-85b0a5273e0c
 md"""
@@ -1330,47 +1376,6 @@ gradient_2d_viz_2d(
 	η = 1e-2
 )
 
-# ╔═╡ 5e0f16b4-12e3-11eb-212f-e565f97adfed
-function gradient_2d_viz_3d(N_gradient_2d, x0, y0)
-
-	history = accumulate(1:N_gradient_2d, init=[x0, y0]) do old, _
-		gradient_descent_2d_step(himmelbau, old...)
-	end
-	
-	all = [[x0, y0], history...]
-	
-	p = surface(-4:0.4:5, -4:0.4:4, himmelbau)
-	
-	trace = [himmelbau(s...) for s in all]
-	
-	plot!(p, first.(all), last.(all), trace, 
-		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
-	scatter!(p, first.(all), last.(all), trace, 
-		color="blue", label="gradient descent", 
-		markersize=3, markerstrokewidth=0)
-	
-	as_svg(p)
-end
-
-# ╔═╡ 9ae4ebac-12e3-11eb-0acc-23113f5264a9
-if run_3d_visualisation
-	let
-		# we temporarily change the plotting backend to an interactive one
-		using PlotlyBase
-		plotly()
-
-		# we dont use the sliders because this plot is quite slow
-		x0 = 0.5
-		N = 20
-		y0 = -3
-
-		p = gradient_2d_viz_3d(N, x0, y0)
-		gr()
-
-		p
-	end
-end
-
 # ╔═╡ 496b8816-12d3-11eb-3cec-c777ba81eb60
 let
 	p = plot()
@@ -1496,8 +1501,9 @@ end
 # ╠═b6ae4d7e-12e6-11eb-1f92-c95c040d4401
 # ╠═a0045046-1248-11eb-13bd-8b8ad861b29a
 # ╟─7e318fea-12e7-11eb-3490-b17e0d4dbc50
-# ╟─605aafa4-12e7-11eb-2d13-7f7db3fac439
-# ╟─9ae4ebac-12e3-11eb-0acc-23113f5264a9
+# ╠═605aafa4-12e7-11eb-2d13-7f7db3fac439
+# ╠═9ae4ebac-12e3-11eb-0acc-23113f5264a9
+# ╠═24e6add6-16d1-11eb-1102-e7ecceeed9e0
 # ╟─5e0f16b4-12e3-11eb-212f-e565f97adfed
 # ╟─a03890d6-1248-11eb-37ee-85b0a5273e0c
 # ╟─6d1ee93e-1103-11eb-140f-63fca63f8b06
