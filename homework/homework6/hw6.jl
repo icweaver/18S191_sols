@@ -100,7 +100,7 @@ md"_Let's create a package environment:_"
 # ╔═╡ 557b0f80-13db-11eb-349b-ddb84526c5d9
 begin
 	import DarkMode
-	DarkMode.enable(theme="yonce")
+	DarkMode.enable()
 end
 
 # ╔═╡ 0d191540-106e-11eb-1f20-bf72a75fb650
@@ -560,6 +560,11 @@ end
 # ╔═╡ a53cf3f8-12e1-11eb-0b0c-2b794a7ac841
 md" ``x_0 = `` $(@bind x0_gradient_1d Slider(-3:.01:1.5, default=-1, show_value=true))"
 
+# ╔═╡ d69a3d44-17e5-11eb-12b6-a731ee64622f
+# plot!(p, T, s; color="#1f78b4", label=label*" S", lw=3, kwargs...)
+# 	plot!(p, T, i; color="#c44e52", label=label*" I", lw=3, kwargs...)
+# 	plot!(p, T, r; color="#029e73", label=label*" R", lw=3,
+
 # ╔═╡ 754e4c48-12df-11eb-3818-f54f6fc7176b
 md"""
 👉 Write a function `gradient_descent_1d(f, x0)` that repeatedly applies the previous function (`N_steps` times), starting from the point `x0`, like in the vizualisation above. The result should be the final guess for ``x``.
@@ -899,7 +904,7 @@ md"""
 # ╔═╡ 6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
 found_β, found_γ = let
 	β₀, γ₀ = 0.0192, 0.0023
-	gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=1_000, tol=1e-6)
+	gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10, tol=1e-6)
 end
 
 # ╔═╡ 86556128-15a7-11eb-07f6-85455673d6ea
@@ -1304,13 +1309,16 @@ function gradient_1d_viz(N_gradient_1d, x0)
 	
 	# slope = wavy_deriv(a_euler)
 	
-	p = plot(x, f, label="f(x)", lw=3, opacity=.6, color="gray")
+	p = plot(x, f, label="f(x)", lw=3, opacity=.6, color="gray",
+	xguide=:x, yguide=:y)
 	# p = plot()
 	
 	plot!(p, all, f, 
-		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
+		opacity=range(.5,step=.2,length=length(all)), label=nothing,
+		color="#029e73"
+	)
 	scatter!(p, all, f,
-		color="blue", label="gradient descent", 
+		label="gradient descent", 
 		markersize=3, markerstrokewidth=0)
 	
 	as_svg(p)
@@ -1340,7 +1348,7 @@ function gradient_2d_viz_2d(
 		colorbar_title="L",
 	)
 	
-	plot!(xguide = "X", yguide = "Y")
+	plot!(xguide = "x", yguide = "y")
 	
 	plot!(
 		p,
@@ -1457,7 +1465,7 @@ end
 # ╠═0a095a94-1245-11eb-001a-b908128532aa
 # ╟─51c9a25e-1244-11eb-014f-0bcce2273cee
 # ╟─58675b3c-1245-11eb-3548-c9cb8a6b3188
-# ╟─b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
+# ╠═b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
 # ╟─586d0352-1245-11eb-2504-05d0aa2352c6
 # ╟─589b2b4c-1245-11eb-1ec7-693c6bda97c4
 # ╟─58b45a0e-1245-11eb-04d1-23a1f3a0f242
@@ -1482,9 +1490,10 @@ end
 # ╠═d33271a2-12df-11eb-172a-bd5600265f49
 # ╟─ed344a8c-12df-11eb-03a3-2922620fd20f
 # ╟─8ae98c74-12e0-11eb-2802-d9a544d8b7ae
-# ╟─88b30f10-12e1-11eb-383d-4f095625cd16
+# ╠═88b30f10-12e1-11eb-383d-4f095625cd16
 # ╟─a53cf3f8-12e1-11eb-0b0c-2b794a7ac841
-# ╟─90114f98-12e0-11eb-2011-a3207bbc24f6
+# ╠═d69a3d44-17e5-11eb-12b6-a731ee64622f
+# ╠═90114f98-12e0-11eb-2011-a3207bbc24f6
 # ╟─754e4c48-12df-11eb-3818-f54f6fc7176b
 # ╠═9489009a-12e8-11eb-2fb7-97ba0bdf339c
 # ╟─f46aeaf0-1246-11eb-17aa-2580fdbcfa5a
@@ -1543,17 +1552,17 @@ end
 # ╟─38b09bd8-12d5-11eb-2f7b-579e9db3973d
 # ╠═6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
 # ╠═86556128-15a7-11eb-07f6-85455673d6ea
-# ╟─106670f2-12d6-11eb-1854-5bf0fc6f4dfb
+# ╠═106670f2-12d6-11eb-1854-5bf0fc6f4dfb
 # ╟─b94b7610-106d-11eb-2852-25337ce6ec3a
 # ╟─112eb7b2-1428-11eb-1c60-15105fa0e5fa
 # ╠═5ac7dcea-1429-11eb-1429-0fdbd4e9b5b1
 # ╟─b94f9df8-106d-11eb-3be8-c5a1bb79d0d4
 # ╟─b9586d66-106d-11eb-0204-a91c8f8355f7
-# ╟─b9616f92-106d-11eb-1bd1-ede92a617fdb
+# ╠═b9616f92-106d-11eb-1bd1-ede92a617fdb
 # ╟─b969dbaa-106d-11eb-3e5a-81766a333c49
-# ╟─b9728c20-106d-11eb-2286-4f670c229f3e
+# ╠═b9728c20-106d-11eb-2286-4f670c229f3e
 # ╟─b97afa48-106d-11eb-3c2c-cdee1d1cc6d7
-# ╟─b98238ce-106d-11eb-1e39-f9eda5df76af
+# ╠═b98238ce-106d-11eb-1e39-f9eda5df76af
 # ╟─b989e544-106d-11eb-3c53-3906c5c922fb
 # ╟─05bfc716-106a-11eb-36cb-e7c488050d54
 # ╟─df42aa9e-10c9-11eb-2c19-2d7ce40a1c6c
