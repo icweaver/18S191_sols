@@ -793,7 +793,7 @@ loss_dice(guess_μ, guess_σ)
 # ╔═╡ 20f9742c-1593-11eb-2acc-e352be3bc941
 found_μ, found_σ = let
 	μ₀, σ₀ = 30, 1
-	gradient_descent_2d(loss_dice, μ₀, σ₀, η=0.3, N_steps=40_000, tol=1e-6)
+	gradient_descent_2d(loss_dice, μ₀, σ₀, η=0.4, N_steps=40_000, tol=1e-5)
 end
 
 # ╔═╡ ac320522-124b-11eb-1552-51c2adaf2521
