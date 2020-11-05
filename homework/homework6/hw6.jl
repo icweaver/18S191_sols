@@ -97,10 +97,13 @@ Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 # ╔═╡ 05976f0c-106a-11eb-03a4-0febbc18fae8
 md"_Let's create a package environment:_"
 
+# ╔═╡ bcc5b728-1e1f-11eb-0fa6-e508635ce157
+sleep(5)
+
 # ╔═╡ 557b0f80-13db-11eb-349b-ddb84526c5d9
 begin
 	import DarkMode
-	DarkMode.enable()
+	#DarkMode.enable()
 end
 
 # ╔═╡ 0d191540-106e-11eb-1f20-bf72a75fb650
@@ -793,7 +796,7 @@ loss_dice(guess_μ, guess_σ)
 # ╔═╡ 20f9742c-1593-11eb-2acc-e352be3bc941
 found_μ, found_σ = let
 	μ₀, σ₀ = 30, 1
-	gradient_descent_2d(loss_dice, μ₀, σ₀, η=0.4, N_steps=40_000, tol=1e-5)
+	gradient_descent_2d(loss_dice, μ₀, σ₀, η=0.2, N_steps=40_000, tol=1e-5)
 end
 
 # ╔═╡ ac320522-124b-11eb-1552-51c2adaf2521
@@ -807,6 +810,12 @@ let
 	catch
 	end
 	p
+end
+
+# ╔═╡ f2bc6220-1e0e-11eb-3b16-db7117a39473
+with_terminal() do
+	μ₀, σ₀ = 30, 1
+	@btime gradient_descent_2d($loss_dice, $μ₀, $σ₀, η=0.4, N_steps=40_000, tol=1e-5)
 end
 
 # ╔═╡ 2fcb93aa-124f-11eb-10de-55fced6f4b83
@@ -904,7 +913,14 @@ md"""
 # ╔═╡ 6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
 found_β, found_γ = let
 	β₀, γ₀ = 0.0192, 0.0023
-	gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10, tol=1e-6)
+	#gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10, tol=1e-6)
+	gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10_000, tol=1e-4)
+end
+
+# ╔═╡ 7d022f9a-1efb-11eb-3948-b5baeb6fc5e7
+with_terminal() do
+	β₀, γ₀ = 0.0192, 0.0023
+	@btime gradient_descent_2d($loss_sir, $β₀, $γ₀, η=1e-7, N_steps=10_000, tol=1e-4)
 end
 
 # ╔═╡ 86556128-15a7-11eb-07f6-85455673d6ea
@@ -1417,6 +1433,7 @@ end
 # ╟─0579e962-106a-11eb-26b5-2160f461f4cc
 # ╟─0587db1c-106a-11eb-0560-c3d53c516805
 # ╟─05976f0c-106a-11eb-03a4-0febbc18fae8
+# ╠═bcc5b728-1e1f-11eb-0fa6-e508635ce157
 # ╠═557b0f80-13db-11eb-349b-ddb84526c5d9
 # ╠═05b01f6e-106a-11eb-2a88-5f523fafe433
 # ╟─0d191540-106e-11eb-1f20-bf72a75fb650
@@ -1530,6 +1547,7 @@ end
 # ╠═2fc55daa-124f-11eb-399e-659e59148ef5
 # ╠═3a6ec2e4-124f-11eb-0f68-791475bab5cd
 # ╠═20f9742c-1593-11eb-2acc-e352be3bc941
+# ╠═f2bc6220-1e0e-11eb-3b16-db7117a39473
 # ╟─2fcb93aa-124f-11eb-10de-55fced6f4b83
 # ╟─3f5e88bc-12c8-11eb-2d74-51f2f5060928
 # ╠═c569a5d8-1267-11eb-392f-452de141161b
@@ -1551,6 +1569,7 @@ end
 # ╠═754b5368-12e8-11eb-0763-e3ec56562c5f
 # ╟─38b09bd8-12d5-11eb-2f7b-579e9db3973d
 # ╠═6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
+# ╠═7d022f9a-1efb-11eb-3948-b5baeb6fc5e7
 # ╠═86556128-15a7-11eb-07f6-85455673d6ea
 # ╠═106670f2-12d6-11eb-1854-5bf0fc6f4dfb
 # ╟─b94b7610-106d-11eb-2852-25337ce6ec3a
