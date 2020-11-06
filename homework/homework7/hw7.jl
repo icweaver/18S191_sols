@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.6
+# v0.12.7
 
 using Markdown
 using InteractiveUtils
@@ -602,7 +602,7 @@ With all this said, we are ready to write some code.
 """
 
 # ╔═╡ 392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
-function intersection(photon::Photon, sphere::Sphere; ϵ=1e-3)
+function intersection(photon::Photon, sphere::Sphere; ϵ=1e-6)
 	# Convenience variables
 	ℓ = photon.l
 	R₀ = photon.p
@@ -623,19 +623,21 @@ function intersection(photon::Photon, sphere::Sphere; ϵ=1e-3)
 	
 	# Intersection
 	else
+		# d > 0, Two roots
 		denom = 2.0*a
-		
-		if d > ϵ
-			# Two roots
+		if d ≥ ϵ
 			t₁ = (-b + √d) / denom
 			t₂ = (-b - √d) / denom
-			# If time is negative, take the positive root
-			t = t₁*t₂ ≥ 0 ? minimum([t₁, t₂]) : t₁
+			if (t₁ < 0) && (t₂ < 0)
+				return Miss()
+			else
+				# If time is negative, take the positive root
+				t = t₁*t₂ ≥ ϵ ? minimum([t₁, t₂]) : t₁
+			end
+		# d ≈ 0, # One root
 		else
-			# One root
 			t = -b / denom
 		end
-		
 		return Intersection(sphere, d, R₀ + ℓ*t)
 	end
 end
@@ -700,15 +702,18 @@ let
 	p |> as_svg
 end
 
+# ╔═╡ a311e6d0-1fbe-11eb-329f-41771b17e0cd
+philip2 = Photon([-8, 0], [1, 0], 1.0)
+
 # ╔═╡ af5c6bea-1c9c-11eb-35ae-250337e4fc86
 test_sphere = Sphere(
-	[15, -20],
-	30,
+	[-4.5, -2.4],
+	5,
 	1.5,
 )
 
 # ╔═╡ 251f0262-1a0c-11eb-39a3-09be67091dc8
-sphere_intersection = intersection(philip, test_sphere)
+sphere_intersection = intersection(philip2, test_sphere)
 
 # ╔═╡ b3ab93d2-1a0b-11eb-0f5a-cdca19af3d89
 ex_3_scene = [test_sphere, box_scene...]
@@ -717,7 +722,7 @@ ex_3_scene = [test_sphere, box_scene...]
 let
 	p = plot_scene(ex_3_scene)
 	
-	plot_photon_arrow!(p, philip, 4; label="Philip")
+	plot_photon_arrow!(p, philip2, 4; label="Philip")
 	if sphere_intersection isa Intersection
 		scatter!(p, sphere_intersection.point[1:1], sphere_intersection.point[2:2], label="Intersection point")
 	end
@@ -902,6 +907,9 @@ md"""
 ``y_0`` = $(@bind sphere_y₀ Slider(-10:10; default=0, show_value=true))
 """
 
+# ╔═╡ abda50fa-1fc4-11eb-194a-8b190230c6d1
+test_lens_photon
+
 # ╔═╡ b65d9a0c-1a0c-11eb-3cd5-e5a2c4302c7e
 let
 	test_lens = Sphere(
@@ -910,7 +918,14 @@ let
 	1.5,
 	)
 	scene = [test_lens, box_scene...]
-	p = plot_scene(scene, legend=false, xlim=(-11,11), ylim=(-11,11))
+	p = plot_scene(
+		scene,
+		legend=false,
+		xlim=(-11,11),
+		ylim=(-11,11),
+		xguide="x₀",
+		yguide="y₀",
+	)
 	
 	path = accumulate(1:sphere_test_ray_N; init=test_lens_photon) do old_photon, i
 		step_ray(old_photon, scene)
@@ -1229,6 +1244,7 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╟─492b257a-194f-11eb-17fb-f770b4d3da2e
 # ╠═392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
 # ╠═251f0262-1a0c-11eb-39a3-09be67091dc8
+# ╠═a311e6d0-1fbe-11eb-329f-41771b17e0cd
 # ╟─83aa9cea-1a0c-11eb-281d-699665da2b4f
 # ╠═af5c6bea-1c9c-11eb-35ae-250337e4fc86
 # ╠═b3ab93d2-1a0b-11eb-0f5a-cdca19af3d89
@@ -1247,11 +1263,12 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╠═5895d9ae-1c9e-11eb-2f4e-671f2a7a0150
 # ╟─13fef49c-1c9e-11eb-2aa3-d3aa2bfd0d57
 # ╟─c29cc3e0-1d92-11eb-2d8d-a179eb1f982a
+# ╠═abda50fa-1fc4-11eb-194a-8b190230c6d1
 # ╟─b65d9a0c-1a0c-11eb-3cd5-e5a2c4302c7e
 # ╟─c00eb0a6-cab2-11ea-3887-070ebd8d56e2
 # ╟─3dd0a48c-1ca3-11eb-1127-e7c43b5d1666
-# ╠═e15e6da6-1d92-11eb-3c66-a547626a2bd7
-# ╠═270762e4-1ca4-11eb-2fb4-392e5c3b3e04
+# ╟─e15e6da6-1d92-11eb-3c66-a547626a2bd7
+# ╟─270762e4-1ca4-11eb-2fb4-392e5c3b3e04
 # ╠═9627e426-1d91-11eb-2ee5-cf5da83624f5
 # ╟─bbf730c8-1ca6-11eb-3bb0-1188046339ac
 # ╠═cbd8f164-1ca6-11eb-1440-bdaabf73a6c7
