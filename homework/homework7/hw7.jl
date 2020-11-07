@@ -601,6 +601,9 @@ With all this said, we are ready to write some code.
 👉 Write a new method `intersection` that takes a `Photon` and a `Sphere`, and returns either a `Miss` or an `Intersection`, using the method described above. Go back to Exercise 1.3 where we defined the first method, and see how we adapt it to a sphere.
 """
 
+# ╔═╡ 144abd0e-20d2-11eb-2442-956c88018dc8
+sig(t; ϵ) = ifelse(t > ϵ, :p, ifelse(t < -ϵ, :n, :z))
+
 # ╔═╡ 392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
 function intersection(photon::Photon, sphere::Sphere; ϵ=1e-6)
 	# Convenience variables
@@ -608,37 +611,42 @@ function intersection(photon::Photon, sphere::Sphere; ϵ=1e-6)
 	R₀ = photon.p
 	S = sphere.center
 	R_minus_S = R₀ - S
+	D = norm(R_minus_S)
 	r = sphere.radius
 	
 	# Calculate determinant
 	a = ℓ ⋅ ℓ
+	denom = 2.0*a
 	b = 2.0*ℓ ⋅ R_minus_S
-	c = R_minus_S ⋅ R_minus_S - r^2
+	#c = R_minus_S ⋅ R_minus_S - r^2
+	c = norm(R_minus_S)^2 - r^2
 	d = b^2 - 4.0*a*c
 	
-	# No interection
-	if d < 0.0
-		# Zero roots
+	if d < -ϵ # Zero roots
 		return Miss()
 	
-	# Intersection
-	else
-		# d > 0, Two roots
-		denom = 2.0*a
-		if d ≥ ϵ
-			t₁ = (-b + √d) / denom
-			t₂ = (-b - √d) / denom
-			if (t₁ < 0) && (t₂ < 0)
-				return Miss()
-			else
-				# If time is negative, take the positive root
-				t = t₁*t₂ ≥ ϵ ? minimum([t₁, t₂]) : t₁
-			end
-		# d ≈ 0, # One root
+	elseif d > ϵ # Two roots
+		squareroot_d = √d
+		t₁ = (-b + squareroot_d) / denom
+		t₂ = (-b - squareroot_d) / denom
+		
+		sigs = sig.((t₁, t₂), ϵ=ϵ)
+		if sigs ∈ ((:n, :n), (:n, :z), (:z,  :n), (:z, :z))
+			return Miss()
 		else
-			t = -b / denom
+			if sigs ∈ ((:p, :n), (:p, :z))
+				t = t₁
+			elseif sigs ∈ ((:n, :p), (:z, :p))
+				t = t₂
+			else
+				t = minimum((t₁, t₂))
+			end
+			return Intersection(sphere, D, R₀ + ℓ*t)
 		end
-		return Intersection(sphere, d, R₀ + ℓ*t)
+	
+	else # One root
+		t = -b / denom
+		return Intersection(sphere, D, R₀ + ℓ*t)
 	end
 end
 
@@ -702,13 +710,23 @@ let
 	p |> as_svg
 end
 
+# ╔═╡ 8baae6aa-20d7-11eb-14c6-8b65207fda93
+md"""
+| 🤔 |   |      | t2   |     |
+|----|---|------|------|-----|
+|    |   | -    | 0    | +   |
+|    | - | miss | miss | t2  |
+| t1 | 0 | miss | miss | t2  |
+|    | + | t1   | t1   | min |
+"""
+
 # ╔═╡ a311e6d0-1fbe-11eb-329f-41771b17e0cd
 philip2 = Photon([-8, 0], [1, 0], 1.0)
 
 # ╔═╡ af5c6bea-1c9c-11eb-35ae-250337e4fc86
 test_sphere = Sphere(
 	[-4.5, -2.4],
-	5,
+	10,
 	1.5,
 )
 
@@ -1242,11 +1260,13 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╟─e2a8d1d6-1add-11eb-0da1-cda1492a950c
 # ╟─337918f4-194f-11eb-0b45-b13fef3b23bf
 # ╟─492b257a-194f-11eb-17fb-f770b4d3da2e
+# ╠═144abd0e-20d2-11eb-2442-956c88018dc8
 # ╠═392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
-# ╠═251f0262-1a0c-11eb-39a3-09be67091dc8
+# ╟─8baae6aa-20d7-11eb-14c6-8b65207fda93
 # ╠═a311e6d0-1fbe-11eb-329f-41771b17e0cd
-# ╟─83aa9cea-1a0c-11eb-281d-699665da2b4f
 # ╠═af5c6bea-1c9c-11eb-35ae-250337e4fc86
+# ╠═251f0262-1a0c-11eb-39a3-09be67091dc8
+# ╠═83aa9cea-1a0c-11eb-281d-699665da2b4f
 # ╠═b3ab93d2-1a0b-11eb-0f5a-cdca19af3d89
 # ╟─71dc652e-1c9c-11eb-396c-cfd9ee2261fe
 # ╟─584ce620-1935-11eb-177a-f75d9ad8a399
@@ -1263,8 +1283,8 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╠═5895d9ae-1c9e-11eb-2f4e-671f2a7a0150
 # ╟─13fef49c-1c9e-11eb-2aa3-d3aa2bfd0d57
 # ╟─c29cc3e0-1d92-11eb-2d8d-a179eb1f982a
-# ╠═abda50fa-1fc4-11eb-194a-8b190230c6d1
-# ╟─b65d9a0c-1a0c-11eb-3cd5-e5a2c4302c7e
+# ╟─abda50fa-1fc4-11eb-194a-8b190230c6d1
+# ╠═b65d9a0c-1a0c-11eb-3cd5-e5a2c4302c7e
 # ╟─c00eb0a6-cab2-11ea-3887-070ebd8d56e2
 # ╟─3dd0a48c-1ca3-11eb-1127-e7c43b5d1666
 # ╟─e15e6da6-1d92-11eb-3c66-a547626a2bd7
