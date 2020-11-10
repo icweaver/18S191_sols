@@ -605,7 +605,7 @@ With all this said, we are ready to write some code.
 sig(t; ϵ) = ifelse(t > ϵ, :p, ifelse(t < -ϵ, :n, :z))
 
 # ╔═╡ 392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
-function intersection(photon::Photon, sphere::Sphere; ϵ=1e-6)
+function intersection(photon::Photon, sphere::Sphere; ϵ=1e-3)
 	# Convenience variables
 	ℓ = photon.l
 	R₀ = photon.p
@@ -646,7 +646,7 @@ function intersection(photon::Photon, sphere::Sphere; ϵ=1e-6)
 	
 	else # One root
 		t = -b / denom
-		return Intersection(sphere, D, R₀ + ℓ*t)
+		return t > ϵ ? Intersection(sphere, D, R₀ + ℓ*t) : Miss()
 	end
 end
 
@@ -709,6 +709,36 @@ let
 	
 	p |> as_svg
 end
+
+# ╔═╡ 7f6d323e-22c5-11eb-3bb2-99ae3032628f
+# function intersection(photon::Photon, sphere::Sphere; ϵ=1e-3)
+# # function intersection_by_Ian(photon::Photon, sphere::Sphere; ϵ=1e-6)
+
+# 	R₀ = photon.p
+# 	ℓ = photon.l
+# 	S = sphere.center
+# 	r = sphere.radius
+# 	ΔR₀S = R₀ - S
+# 	D = norm(ΔR₀S)
+	
+# 	a = ℓ ⋅ ℓ
+# 	b = 2ℓ ⋅ ΔR₀S
+# 	c = D^2 - r^2
+# 	d = b^2 - 4a*c
+	
+# 	if d < -ϵ
+# 		return Miss()
+# 	elseif d > ϵ
+# 		sqrt_O_d = √d
+# 		ts = filter(x->x>ϵ, ((-b + sqrt_O_d)/2a, (-b - sqrt_O_d)/2a))
+# 		t = !isempty(ts) ? minimum(ts) : (return Miss())
+# 	else
+# 		t = -b / 2a
+# 	end
+	
+# 	R = R₀ + t*ℓ
+# 	t > 0 ? Intersection(sphere, D, R) : Miss()
+# end
 
 # ╔═╡ 8baae6aa-20d7-11eb-14c6-8b65207fda93
 md"""
@@ -812,20 +842,6 @@ $\ell_2 = r\ell_1 + \left(rc-\sqrt{1-r^2(1-c^2)}\right)\hat n.$
 The last step is to write this in code with a function that takes the light direction, the normal, and old and new indices of refraction:
 """
 
-# ╔═╡ 14dc73d2-1a0d-11eb-1a3c-0f793e74da9b
-"""
-	refract(ℓ₁::Vector, n̂::Vector, old_ior, new_ior)
-
-Returns new velocity of refracted photon.
-"""
-function refract(ℓ₁::Vector, n̂::Vector, old_ior, new_ior)
-	r = old_ior / new_ior
-	n̂_oriented = -dot(ℓ₁, n̂) < 0 ? -n̂ : n̂
-	c = -dot(ℓ₁, n̂_oriented)
-	
-	return normalize(r * ℓ₁ + (r*c - sqrt(1 - r^2 * (1 - c^2))) * n̂_oriented)
-end
-
 # ╔═╡ 71b70da6-193e-11eb-0bc4-f309d24fd4ef
 md"
 
@@ -837,9 +853,31 @@ md"""
 We need a helper functions to find the normal of the sphere's surface at any position. Remember that the normal will always be pointing perpendicularly from the surface of the sphere. This means that no matter what point you are at, the normal will just be a normalized vector of your current location minus the sphere's position:
 """
 
+# ╔═╡ 834083fe-22be-11eb-2124-498840325c24
+const MACH_EPS = eps(Float64)
+
+# ╔═╡ 14dc73d2-1a0d-11eb-1a3c-0f793e74da9b
+"""
+	refract(ℓ₁::Vector, n̂::Vector, old_ior, new_ior)
+
+Returns new velocity of refracted photon.
+"""
+function refract(ℓ₁::Vector, n̂::Vector, old_ior, new_ior)
+	r = old_ior / new_ior
+	n̂_oriented = -dot(ℓ₁, n̂) < -2*MACH_EPS ? -n̂ : n̂
+	c = -dot(ℓ₁, n̂_oriented)
+	sqrt_arg = 1 - r^2 * (1 - c^2) #|> pin
+	(sqrt_arg < 0.0) && (sqrt_arg = 0.0)
+	
+	return normalize(r * ℓ₁ + (r*c - sqrt(sqrt_arg)) * n̂_oriented)
+end
+
+# ╔═╡ d3c857f2-22be-11eb-0ce9-7d51f9510216
+pin(x; ϵ=1e-3) = -ϵ ≤ x ≤ ϵ ? 0.0 : x
+
 # ╔═╡ 6fdf613c-193f-11eb-0029-957541d2ed4d
 function sphere_normal_at(p::Vector{Float64}, s::Sphere)
-	normalize(p - s.center)
+	n̂ = normalize(p - s.center) .|> pin
 end
 
 # ╔═╡ 392c25b8-1add-11eb-225d-49cfca27bef4
@@ -849,10 +887,21 @@ md"""
 
 # ╔═╡ 427747d6-1ca1-11eb-28ae-ff50728c84fe
 function interact(photon::Photon, hit::Intersection{Sphere})
-	n̂ = sphere_normal_at(hit.point, hit.object)
-	ℓ₂ = refract(photon.l, n̂, photon.ior, hit.object.ior)
-	ior = photon.ior == 1.0 ? photon.ior : hit.object.ior
-	return Photon(hit.point, ℓ₂, ior)
+	# Photon
+	ℓ_photon = photon.l
+	ior_photon = photon.ior
+	
+	# Sphere
+	sphere = hit.object
+	p = hit.point
+	ior_sphere = sphere.ior
+	
+	# Refract
+	n̂ = sphere_normal_at(p, sphere)
+	ior_new = ior_photon == 1.0 ? ior_sphere : 1.0
+	ℓ₂ = refract(ℓ_photon, n̂, ior_photon, ior_new)
+	
+	return Photon(p, ℓ₂, ior_new)
 end
 
 # ╔═╡ 0b03316c-1c80-11eb-347c-1b5c9a0ae379
@@ -921,8 +970,8 @@ By defining a method for `interact` that takes a sphere intersection, we are now
 # ╔═╡ c29cc3e0-1d92-11eb-2d8d-a179eb1f982a
 md"""
 ``N`` = $(@bind sphere_test_ray_N Slider(1:30; default=4, show_value=true))
-``x_0`` = $(@bind sphere_x₀ Slider(-10:10; default=0, show_value=true))
-``y_0`` = $(@bind sphere_y₀ Slider(-10:10; default=0, show_value=true))
+``x_0`` = $(@bind sphere_x₀ Slider(-10:0.1:10; default=0, show_value=true))
+``y_0`` = $(@bind sphere_y₀ Slider(-10:0.1:10; default=0, show_value=true))
 """
 
 # ╔═╡ abda50fa-1fc4-11eb-194a-8b190230c6d1
@@ -970,7 +1019,7 @@ md"""
 md"""
 ``N =`` $(@bind N Slider(1:10; default=3, show_value=true))
 
-``x_0 =`` $(@bind x₀ Slider(-10:10; default=0, show_value=true))
+``x_0 =`` $(@bind x₀ Slider(-10:0.1:10; default=0, show_value=true))
 ``y_0 =``  $(@bind y₀ Slider(-10:10; default=0, show_value=true))
 
 ``r_0 =`` $(@bind r₀ Slider(0:10; default=3, show_value=true))
@@ -1005,6 +1054,32 @@ let
 	
 	p
 end |> as_svg
+
+# ╔═╡ e014f5d0-22e4-11eb-026e-4b247345e348
+function simulate()
+	test_lens = Sphere(
+		[x₀, y₀],
+		r₀,
+		ior,
+	)
+	scene = [test_lens, box_scene...]
+	
+	p = plot_scene(scene, legend=false, xlim=(-11,11), ylim=(-11,11))
+	
+	photons = [Photon([-10.0, y], [1.0, 0.0], 1.0) for y in -r₀:0.5:r₀]
+	for photon in photons
+		path = accumulate(1:N; init=photon) do old_photon, i
+			step_ray(old_photon, scene)
+		end
+
+		plot_ray!(p, photon, path)
+	end
+end
+
+# ╔═╡ eb7d5ebc-22e4-11eb-20e9-99f1c8882d08
+with_terminal() do
+	@btime simulate()
+end
 
 # ╔═╡ bbf730c8-1ca6-11eb-3bb0-1188046339ac
 md"""
@@ -1262,6 +1337,7 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╟─492b257a-194f-11eb-17fb-f770b4d3da2e
 # ╠═144abd0e-20d2-11eb-2442-956c88018dc8
 # ╠═392fe192-1ca1-11eb-36c4-f9bd2b01a5e5
+# ╠═7f6d323e-22c5-11eb-3bb2-99ae3032628f
 # ╟─8baae6aa-20d7-11eb-14c6-8b65207fda93
 # ╠═a311e6d0-1fbe-11eb-329f-41771b17e0cd
 # ╠═af5c6bea-1c9c-11eb-35ae-250337e4fc86
@@ -1274,6 +1350,8 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╠═14dc73d2-1a0d-11eb-1a3c-0f793e74da9b
 # ╟─71b70da6-193e-11eb-0bc4-f309d24fd4ef
 # ╟─54b81de0-193f-11eb-004d-f90ec43588f8
+# ╠═834083fe-22be-11eb-2124-498840325c24
+# ╠═d3c857f2-22be-11eb-0ce9-7d51f9510216
 # ╠═6fdf613c-193f-11eb-0029-957541d2ed4d
 # ╟─392c25b8-1add-11eb-225d-49cfca27bef4
 # ╟─c25caf08-1a13-11eb-3c4d-0567faf4e662
@@ -1282,13 +1360,15 @@ TODO_note(text) = Markdown.MD(Markdown.Admonition("warning", "TODO note", [text]
 # ╠═65aec4fc-1c9e-11eb-1c5a-6dd7c533d3b8
 # ╠═5895d9ae-1c9e-11eb-2f4e-671f2a7a0150
 # ╟─13fef49c-1c9e-11eb-2aa3-d3aa2bfd0d57
-# ╟─c29cc3e0-1d92-11eb-2d8d-a179eb1f982a
+# ╠═c29cc3e0-1d92-11eb-2d8d-a179eb1f982a
 # ╟─abda50fa-1fc4-11eb-194a-8b190230c6d1
 # ╠═b65d9a0c-1a0c-11eb-3cd5-e5a2c4302c7e
 # ╟─c00eb0a6-cab2-11ea-3887-070ebd8d56e2
 # ╟─3dd0a48c-1ca3-11eb-1127-e7c43b5d1666
 # ╟─e15e6da6-1d92-11eb-3c66-a547626a2bd7
-# ╟─270762e4-1ca4-11eb-2fb4-392e5c3b3e04
+# ╠═270762e4-1ca4-11eb-2fb4-392e5c3b3e04
+# ╠═e014f5d0-22e4-11eb-026e-4b247345e348
+# ╠═eb7d5ebc-22e4-11eb-20e9-99f1c8882d08
 # ╠═9627e426-1d91-11eb-2ee5-cf5da83624f5
 # ╟─bbf730c8-1ca6-11eb-3bb0-1188046339ac
 # ╠═cbd8f164-1ca6-11eb-1440-bdaabf73a6c7
