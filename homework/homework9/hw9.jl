@@ -461,7 +461,7 @@ RCP85_T_in_2100 = let
 end
 
 # ╔═╡ 1e1739bc-2e05-11eb-1e2b-2344d7e97f56
-md"The temperature will be $(round(RCP85_T_in_2100, digits=2)) K in 2100."
+md"The temperature will be $(round(RCP85_T_in_2100, digits=2)) C in 2100."
 
 # ╔═╡ 4b091fac-2672-11eb-0db8-75457788d85e
 md"""
@@ -529,8 +529,20 @@ We are interested in how the **uncertainty in our input** $B$ (the climate feedb
 
 """
 
-# ╔═╡ f2e55166-25ff-11eb-0297-796e97c62b07
+# ╔═╡ 9487e9ca-2eaa-11eb-06a3-4f92521d6f17
+function monte_carlo_sim(CO2::Function=Model.CO2_RCP26, N=1_000)
+	B_dist = Normal(B̅, σ)
+	Bs = rand(B_dist, N)
+	Ts = temperature_response.(CO2, Bs)
+	Ts = Ts[Ts .≥ 0]
+	return mean(Ts), std(Ts), Ts
+end
 
+# ╔═╡ f2e55166-25ff-11eb-0297-796e97c62b07
+monte_carlo_sim(Model.CO2_RCP26)
+
+# ╔═╡ 71b1af8c-2ead-11eb-2408-4597a40fec80
+monte_carlo_sim(Model.CO2_RCP85)
 
 # ╔═╡ 1ea81214-1fca-11eb-2442-7b0b448b49d6
 md"""
@@ -803,7 +815,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
 # ╟─87e68a4a-2433-11eb-3e9d-21675850ed71
 # ╟─fe3304f8-2668-11eb-066d-fdacadce5a19
-# ╟─930d7154-1fbf-11eb-1c3a-b1970d291811
+# ╠═930d7154-1fbf-11eb-1c3a-b1970d291811
 # ╟─1312525c-1fc0-11eb-2756-5bc3101d2260
 # ╠═c4398f9c-1fc4-11eb-0bbb-37f066c6027d
 # ╟─7f961bc0-1fc5-11eb-1f18-612aeff0d8df
@@ -846,7 +858,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═9596c2dc-2671-11eb-36b9-c1af7e5f1089
 # ╠═f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
 # ╠═855b1fe0-2e04-11eb-1227-8da4a450ba56
-# ╟─1e1739bc-2e05-11eb-1e2b-2344d7e97f56
+# ╠═1e1739bc-2e05-11eb-1e2b-2344d7e97f56
 # ╟─4b091fac-2672-11eb-0db8-75457788d85e
 # ╟─9cdc5f84-2671-11eb-3c78-e3495bc64d33
 # ╠═f688f9f2-2671-11eb-1d71-a57c9817433f
@@ -858,8 +870,10 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═40f1e7d8-252d-11eb-0549-49ca4e806e16
 # ╟─ee1be5dc-252b-11eb-0865-291aa823b9e9
 # ╟─06c5139e-252d-11eb-2645-8b324b24c405
+# ╠═9487e9ca-2eaa-11eb-06a3-4f92521d6f17
 # ╠═f2e55166-25ff-11eb-0297-796e97c62b07
-# ╟─1ea81214-1fca-11eb-2442-7b0b448b49d6
+# ╠═71b1af8c-2ead-11eb-2408-4597a40fec80
+# ╠═1ea81214-1fca-11eb-2442-7b0b448b49d6
 # ╟─a0ef04b0-25e9-11eb-1110-cde93601f712
 # ╟─3e310cf8-25ec-11eb-07da-cb4a2c71ae34
 # ╟─d6d1b312-2543-11eb-1cb2-e5b801686ffb
