@@ -441,7 +441,7 @@ In this simulation, we used `T0 = 14` and `CO2 = t -> 280`, which is why `T` is 
 # ╔═╡ 9596c2dc-2671-11eb-36b9-c1af7e5f1089
 simulated_rcp85_model = let
 	ebm = Model.EBM(14.0, 1850, 1, Model.CO2_RCP85)
-	Model.run!(ebm, 2100)
+	Model.run!(ebm, 2400)
 	ebm
 end
 
@@ -480,8 +480,12 @@ md"""
 
 # ╔═╡ f688f9f2-2671-11eb-1d71-a57c9817433f
 function temperature_response(CO2::Function, B::Float64=-1.3)
-	
-	return missing
+	simulated_model = let
+		ebm = Model.EBM(14.0, 1850, 1, CO2; B=B)
+		Model.run!(ebm, 2100)
+		ebm
+	end
+	T = simulated_model.T[end]
 end
 
 # ╔═╡ 049a866e-2672-11eb-29f7-bfea7ad8f572
