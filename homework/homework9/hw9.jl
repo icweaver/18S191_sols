@@ -57,15 +57,6 @@ Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 # ╔═╡ 253f4da0-2433-11eb-1e48-4906059607d3
 md"_Let's create a package environment:_"
 
-# ╔═╡ 12b7541e-2bba-11eb-073e-0911d4e747d4
-begin
-	import DarkMode
-	DarkMode.enable()
-end
-
-# ╔═╡ 7300ec16-2bc1-11eb-1947-4fbd7b66cc60
-theme(:dark)
-
 # ╔═╡ 87e68a4a-2433-11eb-3e9d-21675850ed71
 html"""
 <iframe width="100%" height="300" src="https://www.youtube.com/embed/Gi4ZZVS2GLA" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -322,7 +313,7 @@ B_samples = let
 end
 
 # ╔═╡ 49cb5174-1fc3-11eb-3670-c3868c9b0255
-histogram(B_samples, size=(600, 250), label=nothing, xlabel="B [W/m²/K]", ylabel="samples")
+stephist(B_samples, size=(600, 250), label=nothing, xlabel="B [W/m²/K]", ylabel="samples", fill=true)
 
 # ╔═╡ f3abc83c-1fc7-11eb-1aa8-01ce67c8bdde
 md"""
@@ -336,7 +327,13 @@ ECS_samples = ECS(B=B_samples)
 md"**Answer:**"
 
 # ╔═╡ 1f148d9a-1fc8-11eb-158e-9d784e390b24
-histogram(ECS_samples, label=nothing, xlabel="ECS [K]", ylabel="samples")
+stephist(
+	ECS_samples,
+	label=nothing,
+	fill=true,
+	xlabel="ECS [K]",
+	ylabel="samples",
+)
 
 # ╔═╡ cf8dca6c-1fc8-11eb-1f89-099e6ba53c22
 md"It looks like the ECS distribution is **not normally distributed**, even though $B$ is. 
@@ -443,12 +440,28 @@ In this simulation, we used `T0 = 14` and `CO2 = t -> 280`, which is why `T` is 
 
 # ╔═╡ 9596c2dc-2671-11eb-36b9-c1af7e5f1089
 simulated_rcp85_model = let
-	
-	missing
+	ebm = Model.EBM(14.0, 1850, 1, Model.CO2_RCP85)
+	Model.run!(ebm, 2100)
+	ebm
 end
 
 # ╔═╡ f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
+plot(
+	simulated_rcp85_model.t,
+	simulated_rcp85_model.T,
+	xguide="Date",
+	yguide="Temperature (C)"
+)
 
+# ╔═╡ 855b1fe0-2e04-11eb-1227-8da4a450ba56
+RCP85_T_in_2100 = let
+	t = simulated_rcp85_model.t
+	T = simulated_rcp85_model.T
+	T[findfirst(t .≥ 2100)]
+end
+
+# ╔═╡ 1e1739bc-2e05-11eb-1e2b-2344d7e97f56
+md"The temperature will be $(round(RCP85_T_in_2100, digits=2)) K in 2100."
 
 # ╔═╡ 4b091fac-2672-11eb-0db8-75457788d85e
 md"""
@@ -783,9 +796,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─21524c08-2433-11eb-0c55-47b1bdc9e459
 # ╠═23335418-2433-11eb-05e4-2b35dc6cca0e
 # ╟─253f4da0-2433-11eb-1e48-4906059607d3
-# ╠═12b7541e-2bba-11eb-073e-0911d4e747d4
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
-# ╠═7300ec16-2bc1-11eb-1947-4fbd7b66cc60
 # ╟─87e68a4a-2433-11eb-3e9d-21675850ed71
 # ╟─fe3304f8-2668-11eb-066d-fdacadce5a19
 # ╟─930d7154-1fbf-11eb-1c3a-b1970d291811
@@ -830,6 +841,8 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─12cbbab0-2671-11eb-2b1f-038c206e84ce
 # ╠═9596c2dc-2671-11eb-36b9-c1af7e5f1089
 # ╠═f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
+# ╠═855b1fe0-2e04-11eb-1227-8da4a450ba56
+# ╟─1e1739bc-2e05-11eb-1e2b-2344d7e97f56
 # ╟─4b091fac-2672-11eb-0db8-75457788d85e
 # ╟─9cdc5f84-2671-11eb-3c78-e3495bc64d33
 # ╠═f688f9f2-2671-11eb-1d71-a57c9817433f
