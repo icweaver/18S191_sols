@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.4
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -20,12 +20,18 @@ begin
 	Pkg.add([
 			Pkg.PackageSpec(name="PlutoUI", version="0.6.7-0.6"), 
 			Pkg.PackageSpec(name="Plots", version="1.6-1"),
+			Pkg.PackageSpec(name="PlotlyBase"),
 			])
 
 	using Plots
+	theme(:juno)
+	default(msw=0)
 	gr()
 	using PlutoUI
 end
+
+# ╔═╡ 3e6ed55a-13eb-11eb-29a0-c15dfbc05737
+using BenchmarkTools
 
 # ╔═╡ 048890ee-106a-11eb-1a81-5744150543e8
 md"_homework 6, version 0_"
@@ -61,6 +67,9 @@ if(numbers[0] > 0 || numbers[1] > 12 || numbers[2] > 1) {
 
 """
 
+# ╔═╡ d4460b68-5142-11eb-0e92-a34151a13e67
+TableOfContents(depth=10)
+
 # ╔═╡ 0579e962-106a-11eb-26b5-2160f461f4cc
 md"""
 
@@ -77,7 +86,7 @@ Feel free to ask questions!
 # ╔═╡ 0587db1c-106a-11eb-0560-c3d53c516805
 # edit the code below to set your name and kerberos ID (i.e. email without @mit.edu)
 
-student = (name = "Jazzy Doe", kerberos_id = "jazz")
+student = (name = "Ian Weaver", kerberos_id = "hahvard")
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll around the page to see what's up
@@ -140,9 +149,16 @@ md"""
 """
 
 # ╔═╡ d217a4b6-12e8-11eb-29ce-53ae143a39cd
+@doc raw"""
+	finite_difference_slope(f, a, h)
+
+Returns the finite difference approximation of the derivative.
+```math
+f'(a) \simeq \frac{f(a + h) - f(a)}{h}
+```
+"""
 function finite_difference_slope(f::Function, a, h=1e-3)
-	
-	return missing
+	(f(a + h) - f(a)) / h
 end
 
 # ╔═╡ f0576e48-1261-11eb-0579-0b1372565ca7
@@ -150,13 +166,18 @@ finite_difference_slope(sqrt, 4.0, 5.0)
 
 # ╔═╡ bf8a4556-112b-11eb-042e-d705a2ca922a
 md"""
-👉 Write a function `tangent_line` that takes the same arguments `f`, `a` and `g`, but it **returns a function**. This function (``\mathbb{R} \rightarrow \mathbb{R}``) is the _tangent line_ with slope ``f'(a)`` (computed using `finite_difference_slope`) that passes through ``(a, f(a))``.
+👉 Write a function `tangent_line` that takes the same arguments `f`, `a` and `h`, but it **returns a function**. This function (``\mathbb{R} \rightarrow \mathbb{R}``) is the _tangent line_ with slope ``f'(a)`` (computed using `finite_difference_slope`) that passes through ``(a, f(a))``.
 """
 
 # ╔═╡ cbf0a27a-12e8-11eb-379d-85550b942ceb
+@doc raw"""
+	tangent_line(f, a, h)
+
+Returns the tangent line function ``\phi``, where ``\phi(x) = mx + f(a)``, with slope ``m`` given by ``m =`` `finite_difference_slope(f, a , h)`
+"""
 function tangent_line(f, a, h)
-	
-	return missing
+	ϕ = x -> finite_difference_slope(f, a, h)*(x - a) + f(a)
+	return ϕ
 end
 
 # ╔═╡ 2b79b698-10b9-11eb-3bde-53fc1c48d5f7
@@ -175,6 +196,11 @@ Notice that, as you decrease ``h``, the tangent line gets more accurate, but wha
 
 # ╔═╡ 7495af52-10ba-11eb-245f-a98781ba123c
 h_finite_diff = 10.0^log_h
+
+# ╔═╡ e96f2fc4-13e4-11eb-0617-912d0f0dcfcc
+md"""
+If $h$ is too small, we run into numerical overflow and the slope remains fixed at 0
+"""
 
 # ╔═╡ 327de976-10b9-11eb-1916-69ad75fc8dc4
 zeroten = LinRange(0.0, 10.0, 300);
@@ -217,25 +243,52 @@ Using this formula, we only need to know the _value_ ``f(a)`` and the _slope_ ``
 """
 
 # ╔═╡ fa320028-12c4-11eb-0156-773e2aba8e58
-function euler_integrate_step(fprime::Function, fa::Number, 
-		a::Number, h::Number)
-	
-	return missing
+function euler_integrate_step(fprime::Function, fa::Number, a::Number, h::Number)
+	h*fprime(a + h) + fa
 end
 
 # ╔═╡ 2335cae6-112f-11eb-3c2c-254e82014567
 md"""
-👉 Write a function `euler_integrate` that takes takes a known function ``f'``, the initial value ``f(a)`` and a range `T` with `a == first(T)` and `h == step(T)`. It applies the function `euler_integrate_step` repeatedly, once per entry in `T`, to produce the sequence of values ``f(a+h)``, ``f(a+2h)``, etc.
+👉 Write a function `euler_integrate` that takes a known function ``f'``, the initial value ``f(a)`` and a range `T` with `a == first(T)` and `h == step(T)`. It applies the function `euler_integrate_step` repeatedly, once per entry in `T`, to produce the sequence of values ``f(a+h)``, ``f(a+2h)``, etc.
 """
 
 # ╔═╡ fff7754c-12c4-11eb-2521-052af1946b66
-function euler_integrate(fprime::Function, fa::Number, 
-		T::AbstractRange)
-	
-	a0 = T[1]
+function euler_integrate(fprime::Function, fa::Number, T::AbstractRange)
+	a0 = first(T)
 	h = step(T)
+	a = a0
+	f = fa
+	fs = Number[]
+	ein = (f, a) -> euler_integrate_step(fprime, f, a, h)
+	for t in T
+		# Take a step
+		f = ein(f, a)
+
+		# Update
+		a += h
+		push!(fs, f)
+	end
 	
-	return missing
+	return fs
+end
+
+# ╔═╡ 8decf7ba-155d-11eb-1675-a33cf23a6394
+function euler_integrate2(fprime::Function, fa::Number, T::AbstractRange)
+a0 = first(T)
+h = step(T)
+a = a0
+f = fa
+fs = Number[]
+for t in T
+	# Take a step
+	f = euler_integrate_step(fprime, f, a, h)
+
+	# Update
+	a += h
+	push!(fs, f)
+end
+	
+	return fs
 end
 
 # ╔═╡ 4d0efa66-12c6-11eb-2027-53d34c68d5b0
@@ -249,9 +302,15 @@ We already know the analytical solution ``f(x) = x^3``, so the result should be 
 euler_test = let
 	fprime(x) = 3x^2
 	T = 0 : 0.1 : 10
-	
 	euler_integrate(fprime, 0, T)
 end
+
+# ╔═╡ 4a0af1d4-13e9-11eb-3c1c-71e279163c70
+# with_terminal() do
+# 	fprime(x) = 3x^2
+# 	T = 0 : 0.1 : 10
+# 	@btime euler_integrate($fprime, 0, $T)
+# end
 
 # ╔═╡ ab72fdbe-10be-11eb-3b33-eb4ab41730d6
 @bind N_euler Slider(2:40)
@@ -300,9 +359,9 @@ function euler_SIR_step(β, γ, sir_0::Vector, h::Number)
 	s, i, r = sir_0
 	
 	return [
-		missing,
-		missing,
-		missing,
+		s - h*β*s*i,
+		i + h*(β*s*i - γ*i),
+		r + h*γ*i,
 	]
 end
 
@@ -322,10 +381,17 @@ You should return a vector of vectors: a 3-element vector for each point in time
 function euler_SIR(β, γ, sir_0::Vector, T::AbstractRange)
 	# T is a range, you get the step size and number of steps like so:
 	h = step(T)
-	
 	num_steps = length(T)
+	sir_current = sir_0
+	euler_steps = sir -> euler_SIR_step(β, γ, sir, h)
 	
-	return missing
+	SIRS = []
+	for n in 1:num_steps
+		push!(SIRS, sir_current)
+		sir_current = euler_steps(sir_current)
+	end
+	
+	return SIRS
 end
 
 # ╔═╡ 4b791b76-12cd-11eb-1260-039c938f5443
@@ -347,9 +413,9 @@ function plot_sir!(p, T, results; label="", kwargs...)
 	i = getindex.(results, [2])
 	r = getindex.(results, [3])
 	
-	plot!(p, T, s; color=1, label=label*" S", lw=3, kwargs...)
-	plot!(p, T, i; color=2, label=label*" I", lw=3, kwargs...)
-	plot!(p, T, r; color=3, label=label*" R", lw=3, kwargs...)
+	plot!(p, T, s; color="#1f78b4", label=label*" S", lw=3, kwargs...)
+	plot!(p, T, i; color="#c44e52", label=label*" I", lw=3, kwargs...)
+	plot!(p, T, r; color="#029e73", label=label*" R", lw=3, kwargs...)
 	
 	p
 end
@@ -364,7 +430,7 @@ md"""
 
 # ╔═╡ 589b2b4c-1245-11eb-1ec7-693c6bda97c4
 default_SIR_parameters_observation = md"""
-blabla
+Nope, ``I`` peaks then goes back to zero.
 """
 
 # ╔═╡ 58b45a0e-1245-11eb-04d1-23a1f3a0f242
@@ -372,8 +438,25 @@ md"""
 👉 Make an interactive visualization in which you vary $\beta$ and $\gamma$. What relation should $\beta$ and $\gamma$ have for an epidemic outbreak to occur?
 """
 
-# ╔═╡ 68274534-1103-11eb-0d62-f1acb57721bc
+# ╔═╡ c1c88f14-13fc-11eb-2ae7-75790d69196a
+md"""
+I guess ``\beta > \gamma`` so that the rate of people getting infected will outpace the rate of those that recover?
+"""
 
+# ╔═╡ cd091e10-13fa-11eb-1769-cfe9923c359a
+md"""
+``\beta =`` $(@bind β Slider(0:0.1:1, show_value=true))
+``\gamma =`` $(@bind γ Slider(0:0.1:1, show_value=true))
+"""
+
+# ╔═╡ bb8f5f88-13f9-11eb-1f9c-3f084732a7fa
+let
+	sir_T = 0 : 0.1 : 100.0
+	sir_results = euler_SIR(β, γ, 
+	[0.99, 0.01, 0.00], 
+	sir_T)
+	plot_sir!(plot(), sir_T, sir_results)
+end
 
 # ╔═╡ 82539bbe-106e-11eb-0e9e-170dfa6a7dad
 md"""
@@ -395,21 +478,24 @@ You should use **anonymous functions** for this. These have the form `x -> x^2`,
 """
 
 # ╔═╡ bd8522c6-12e8-11eb-306c-c764f78486ef
-function ∂x(f::Function, a, b)
-	
-	return missing
+function ∂x(f::Function, a, b; η=1e-3)
+	f_x = x -> f(x, b)
+	return finite_difference_slope(f_x, a, η)
 end
 
-# ╔═╡ 321964ac-126d-11eb-0a04-0d3e3fb9b17c
-∂x(
-	(x, y) -> 7x^2 + y, 
-	3, 7
-)
+# ╔═╡ 6d0e063e-157f-11eb-0b0e-f958906234f1
+function foo(a)
+  f = x-> x / 2
+  return f(a)
+end
+
+# ╔═╡ 6f10c250-157f-11eb-33f1-add2a5aae022
+foo(10)
 
 # ╔═╡ b7d3aa8c-12e8-11eb-3430-ff5d7df6a122
-function ∂y(f::Function, a, b)
-	
-	return missing
+function ∂y(f::Function, a, b; η=1e-3)
+	f_y = y -> f(a, y)
+	return finite_difference_slope(f_y, b, η)
 end
 
 # ╔═╡ a15509ee-126c-11eb-1fa3-cdda55a47fcb
@@ -425,9 +511,8 @@ md"""
 """
 
 # ╔═╡ adbf65fe-12e8-11eb-04e9-3d763ba91a63
-function gradient(f::Function, a, b)
-	
-	return missing
+function gradient(f::Function, a, b; η=1e-3)
+	[∂x(f, a, b, η=η), ∂y(f, a, b, η=η)]
 end
 
 # ╔═╡ 66b8e15e-126c-11eb-095e-39c2f6abc81d
@@ -454,8 +539,8 @@ We want to minimize a 1D function, i.e. a function $f: \mathbb{R} \to \mathbb{R}
 
 # ╔═╡ a7f1829c-12e8-11eb-15a1-5de40ed92587
 function gradient_descent_1d_step(f, x0; η=0.01)
-	
-	return missing
+	f′ = finite_difference_slope(f, x0, η)
+	return x0 - η*f′
 end
 
 # ╔═╡ d33271a2-12df-11eb-172a-bd5600265f49
@@ -467,10 +552,15 @@ let
 end
 
 # ╔═╡ 8ae98c74-12e0-11eb-2802-d9a544d8b7ae
-@bind N_gradient_1d Slider(0:20)
+@bind N_gradient_1d Slider(0:20, show_value=true)
 
 # ╔═╡ a53cf3f8-12e1-11eb-0b0c-2b794a7ac841
 md" ``x_0 = `` $(@bind x0_gradient_1d Slider(-3:.01:1.5, default=-1, show_value=true))"
+
+# ╔═╡ d69a3d44-17e5-11eb-12b6-a731ee64622f
+# plot!(p, T, s; color="#1f78b4", label=label*" S", lw=3, kwargs...)
+# 	plot!(p, T, i; color="#c44e52", label=label*" I", lw=3, kwargs...)
+# 	plot!(p, T, r; color="#029e73", label=label*" R", lw=3,
 
 # ╔═╡ 754e4c48-12df-11eb-3818-f54f6fc7176b
 md"""
@@ -478,16 +568,13 @@ md"""
 """
 
 # ╔═╡ 9489009a-12e8-11eb-2fb7-97ba0bdf339c
-function gradient_descent_1d(f, x0; η=0.01, N_steps=1000)
+function gradient_descent_1d(f, x0; η=0.01, N_steps=1_000)
+	x = x0
+	for _ in 1:N_steps
+		x = gradient_descent_1d_step(f, x, η=η)
+	end
 	
-	return missing
-end
-
-# ╔═╡ 34dc4b02-1248-11eb-26b2-5d2610cfeb41
-let
-	f = x -> (x - 5)^2 - 3
-	# minimum should be at x = 5
-	gradient_descent_1d(f, 0.0)
+	return x
 end
 
 # ╔═╡ e3120c18-1246-11eb-3bf4-7f4ac45856e0
@@ -497,7 +584,7 @@ Right now we take a fixed number of steps, even if the minimum is found quickly.
 
 # ╔═╡ ebca11d8-12c9-11eb-3dde-c546eccf40fc
 better_stopping_idea = md"""
-blabla
+After a certain tolerance between the difference between the last and second to last step is reached.
 """
 
 # ╔═╡ 9fd2956a-1248-11eb-266d-f558cda55702
@@ -510,18 +597,38 @@ Multivariable calculus tells us that the gradient $\nabla f(a, b)$ at a point $(
 
 # ╔═╡ 852be3c4-12e8-11eb-1bbb-5fbc0da74567
 function gradient_descent_2d_step(f, x0, y0; η=0.01)
-	
-	return missing
+	f′ = gradient(f, x0, y0, η=η)
+	return x0 - η*f′[1], y0 - η*f′[2]
 end
 
-# ╔═╡ 8a114ca8-12e8-11eb-2de6-9149d1d3bc3d
-function gradient_descent_2d(f, x0, y0; η=0.01)
+# ╔═╡ 888a2574-156f-11eb-3f06-1518c902ceb2
+function gradient_descent_2d(
+		f,
+		x0,
+		y0;
+		η = 0.01,
+		N_steps = 1_000,
+		tol = 1e-1,
+	)
+	xold = x0
+	yold = y0
+	xnew = xold
+	ynew = yold
+	grady = (x, y) -> gradient_descent_2d_step(f, x, y, η=η)
+	steps = 0
+	for _ in 1:N_steps
+		xnew, ynew = grady(xold, yold)
+		√((xnew - xold)^2 + (ynew - yold)^2) ≤ tol && break
+		xold = xnew
+		yold = ynew
+		steps += 1
+	end
 	
-	return missing
+	return xnew, ynew, steps
 end
 
 # ╔═╡ 4454c2b2-12e3-11eb-012c-c362c4676bf6
-@bind N_gradient_2d Slider(0:20)
+md"``N_\text{steps} = `` $(@bind N_gradient_2d Slider(0:20, show_value=true))"
 
 # ╔═╡ 4aace1a8-12e3-11eb-3e07-b5827a2a6765
 md" ``x_0 = `` $(@bind x0_gradient_2d Slider(-4:.01:4, default=0, show_value=true))"
@@ -541,7 +648,49 @@ We also prepared a 3D visualisation if you like! It's a bit slow...
 """
 
 # ╔═╡ 605aafa4-12e7-11eb-2d13-7f7db3fac439
-run_3d_visualisation = false
+run_3d_visualisation = true
+
+# ╔═╡ 5e0f16b4-12e3-11eb-212f-e565f97adfed
+function gradient_2d_viz_3d(N_gradient_2d, x0, y0)
+
+	history = accumulate(1:N_gradient_2d, init=[x0, y0]) do old, _
+		gradient_descent_2d_step(himmelbau, old...)
+	end
+	
+	all = [[x0, y0], history...]
+	
+	p = Plots.surface(-4:0.4:5, -4:0.4:4, himmelbau)
+	
+	trace = [himmelbau(s...) for s in all]
+	
+	plot!(p, first.(all), last.(all), trace, 
+		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
+	scatter!(p, first.(all), last.(all), trace, 
+		color="blue", label="gradient descent", 
+		markersize=3, markerstrokewidth=0)
+	
+	#as_svg(p)
+end
+
+# ╔═╡ 9ae4ebac-12e3-11eb-0acc-23113f5264a9
+if run_3d_visualisation
+	let
+		# we temporarily change the plotting backend to an interactive one
+		using PlotlyBase
+		plotly()
+
+		# we dont use the sliders because this plot is quite slow
+		x0 = 0.5
+		N = 20
+		y0 = -3
+
+		p = gradient_2d_viz_3d(N, x0, y0)
+		
+		gr()
+		
+		p
+	end
+end
 
 # ╔═╡ a03890d6-1248-11eb-37ee-85b0a5273e0c
 md"""
@@ -549,7 +698,9 @@ md"""
 """
 
 # ╔═╡ 6d1ee93e-1103-11eb-140f-63fca63f8b06
-
+md"""
+Yea!
+"""
 
 # ╔═╡ 8261eb92-106e-11eb-2ccc-1348f232f5c3
 md"""
@@ -624,25 +775,19 @@ $$\mathcal{L}(\mu, \sigma) := \sum_i [f_{\mu, \sigma}(x_i) - y_i]^2$$
 
 # ╔═╡ 2fc55daa-124f-11eb-399e-659e59148ef5
 function loss_dice(μ, σ)
-	
-	return missing
+	model = gauss.(dice_x, μ, σ)
+	data = dice_y
+	return sum(@. (model - data)^2)
 end
 
 # ╔═╡ 3a6ec2e4-124f-11eb-0f68-791475bab5cd
 loss_dice(guess_μ + 3, guess_σ) >
 loss_dice(guess_μ, guess_σ)
 
-# ╔═╡ 2fcb93aa-124f-11eb-10de-55fced6f4b83
-md"""
-👉 Use your `gradient_descent_2d` function to find a local minimum of $\mathcal{L}$, starting with initial values $\mu = 30$ and $\sigma = 1$. Call the found parameters `found_μ` and `found_σ`.
-"""
-
-# ╔═╡ a150fd60-124f-11eb-35d6-85104bcfd0fe
+# ╔═╡ 20f9742c-1593-11eb-2acc-e352be3bc941
 found_μ, found_σ = let
-	
-	# your code here
-	
-	missing, missing
+	μ₀, σ₀ = 30, 1
+	gradient_descent_2d(loss_dice, μ₀, σ₀, η=0.2, N_steps=40_000, tol=1e-5)
 end
 
 # ╔═╡ ac320522-124b-11eb-1552-51c2adaf2521
@@ -657,6 +802,17 @@ let
 	end
 	p
 end
+
+# ╔═╡ f2bc6220-1e0e-11eb-3b16-db7117a39473
+with_terminal() do
+	μ₀, σ₀ = 30, 1
+	@btime gradient_descent_2d($loss_dice, $μ₀, $σ₀, η=0.4, N_steps=40_000, tol=1e-5)
+end
+
+# ╔═╡ 2fcb93aa-124f-11eb-10de-55fced6f4b83
+md"""
+👉 Use your `gradient_descent_2d` function to find a local minimum of $\mathcal{L}$, starting with initial values $\mu = 30$ and $\sigma = 1$. Call the found parameters `found_μ` and `found_σ`.
+"""
 
 # ╔═╡ 3f5e88bc-12c8-11eb-2d74-51f2f5060928
 md"""
@@ -729,11 +885,15 @@ This time, instead of comparing two vectors of numbers, we need to compare two v
 
 # ╔═╡ 754b5368-12e8-11eb-0763-e3ec56562c5f
 function loss_sir(β, γ)
-	
-	return missing
+	model = euler_SIR(β, γ, [0.99, 0.01, 0.00], hw4_T)
+	data = hw4_results
+	diff = model - data
+	diff_sq = map(x -> x.^2, diff)
+	diff_sq_sum = sum(diff_sq)
+	return diff_sq_sum.^2 |> sum |> √
 end
 
-# ╔═╡ ee20199a-12d4-11eb-1c2c-3f571bbb232e
+# ╔═╡ 351850d6-15a7-11eb-0cec-d54644ad6220
 loss_sir(guess_β, guess_γ)
 
 # ╔═╡ 38b09bd8-12d5-11eb-2f7b-579e9db3973d
@@ -743,11 +903,24 @@ md"""
 
 # ╔═╡ 6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
 found_β, found_γ = let
-	
-	# your code here
-	
-	missing, missing
+	β₀, γ₀ = 0.0192, 0.0023
+	#gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10, tol=1e-6)
+	gradient_descent_2d(loss_sir, β₀, γ₀, η=1e-7, N_steps=10_000, tol=1e-4)
 end
+
+# ╔═╡ 7d022f9a-1efb-11eb-3948-b5baeb6fc5e7
+with_terminal() do
+	β₀, γ₀ = 0.0192, 0.0023
+	@btime gradient_descent_2d($loss_sir, $β₀, $γ₀, η=1e-7, N_steps=10_000, tol=1e-4)
+end
+
+# ╔═╡ 86556128-15a7-11eb-07f6-85455673d6ea
+# gradient_2d_viz_2d(
+# 	1_000, loss_sir, found_β, found_γ,
+# 	Lx_l = 0.0, Lx_u = 0.2,
+# 	Ly_l = 0.0, Ly_u = 0.2,
+# 	η=1e-7, dx=0.01, dy=0.01
+# )
 
 # ╔═╡ b94b7610-106d-11eb-2852-25337ce6ec3a
 if student.name == "Jazzy Doe" || student.kerberos_id == "jazz"
@@ -1062,14 +1235,19 @@ as_svg = as_mime(MIME"image/svg+xml"())
 # ╔═╡ 3d44c264-10b9-11eb-0895-dbfc22ba0c37
 let
 	p = plot(zeroten, wavy, label="f(x)")
-	scatter!(p, [a_finite_diff], [wavy(a_finite_diff)], label="a", color="red")
-	vline!(p, [a_finite_diff], label=nothing, color="red", linestyle=:dash)
-	scatter!(p, [a_finite_diff+h_finite_diff], [wavy(a_finite_diff+h_finite_diff)], label="a + h", color="green")
+	scatter!(p, [a_finite_diff], [wavy(a_finite_diff)], label="a")
+	vline!(p, [a_finite_diff], label=nothing, linestyle=:dash)
+	scatter!(
+		p,
+		[a_finite_diff+h_finite_diff],
+		[wavy(a_finite_diff+h_finite_diff)],
+		label="a + h",
+	)
 	
 	try
 		result = tangent_line(wavy, a_finite_diff, h_finite_diff)
 		
-		plot!(p, zeroten, result, label="tangent", color="purple")
+		plot!(p, zeroten, result, label="tangent")
 	catch
 	end
 	
@@ -1081,11 +1259,11 @@ let
 	slope = wavy_deriv(a_euler)
 	
 	p = plot(LinRange(1.0 - 0.1, 1.0 + 0.1, 2), wavy, label=nothing, lw=3)
-	scatter!(p, [1], wavy, label="f(1)", color="blue", lw=3)
+	scatter!(p, [1], wavy, label="f(1)", lw=3)
 	# p = plot()
 	x = [a_euler - 0.2,a_euler + 0.2]
 	for y in -4:10
-		plot!(p, x, slope .* (x .- a_euler) .+ y, label=nothing, color="purple", opacity=.6)
+		plot!(p, x, slope .* (x .- a_euler) .+ y, label=nothing, opacity=.6)
 	end
 	
 	vline!(p, [a_euler], color="red", label="a", linestyle=:dash)
@@ -1101,24 +1279,23 @@ let
 	
 	slope = wavy_deriv(a_euler)
 	
-	p = plot(zeroten, wavy, label="exact solution", lw=3, opacity=.1, color="gray")
+	p = plot(zeroten, wavy, label="exact solution", lw=3, opacity=.25)
 	# p = plot()
 	
 	last_a = a + (N_euler-1)*h
 	
-	vline!(p, [last_a], color="red", label="a", linestyle=:dash)
+	vline!(p, [last_a], label="a", linestyle=:dash)
 
 	try
 		plot!(p, a .+ h .* (1:N_euler), history, 
-			color="blue", label=nothing)
+			label=nothing)
 		scatter!(p, a .+ h .* (1:N_euler), history, 
-			color="blue", label="appromixation", 
+			label="appromixation", 
 			markersize=2, markerstrokewidth=0)
 
 		
 		plot!(p, [0,10], ([0,10] .- (last_a+h)) .* wavy_deriv(last_a+h) .+ history[end],
-			label="tangent",
-			color="purple")
+			label="tangent")
 
 	catch
 	end
@@ -1139,13 +1316,16 @@ function gradient_1d_viz(N_gradient_1d, x0)
 	
 	# slope = wavy_deriv(a_euler)
 	
-	p = plot(x, f, label="f(x)", lw=3, opacity=.6, color="gray")
+	p = plot(x, f, label="f(x)", lw=3, opacity=.6, color="gray",
+	xguide=:x, yguide=:y)
 	# p = plot()
 	
 	plot!(p, all, f, 
-		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
+		opacity=range(.5,step=.2,length=length(all)), label=nothing,
+		color="#029e73"
+	)
 	scatter!(p, all, f,
-		color="blue", label="gradient descent", 
+		label="gradient descent", 
 		markersize=3, markerstrokewidth=0)
 	
 	as_svg(p)
@@ -1154,68 +1334,62 @@ end
 # ╔═╡ 88b30f10-12e1-11eb-383d-4f095625cd16
 gradient_1d_viz(N_gradient_1d, x0_gradient_1d)
 
-# ╔═╡ 5e0f16b4-12e3-11eb-212f-e565f97adfed
-function gradient_2d_viz_3d(N_gradient_2d, x0, y0)
-
-	history = accumulate(1:N_gradient_2d, init=[x0, y0]) do old, _
-		gradient_descent_2d_step(himmelbau, old...)
-	end
-	
-	all = [[x0, y0], history...]
-	
-	p = surface(-4:0.4:5, -4:0.4:4, himmelbau)
-	
-	trace = [himmelbau(s...) for s in all]
-	
-	plot!(p, first.(all), last.(all), trace, 
-		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
-	scatter!(p, first.(all), last.(all), trace, 
-		color="blue", label="gradient descent", 
-		markersize=3, markerstrokewidth=0)
-	
-	as_svg(p)
-end
-
-# ╔═╡ 9ae4ebac-12e3-11eb-0acc-23113f5264a9
-if run_3d_visualisation
-	let
-		# we temporarily change the plotting backend to an interactive one
-		plotly()
-
-		# we dont use the sliders because this plot is quite slow
-		x0 = 0.5
-		N = 20
-		y0 = -3
-
-		p = gradient_2d_viz_3d(N, x0, y0)
-		gr()
-
-		p
-	end
-end
-
 # ╔═╡ b6ae4d7e-12e6-11eb-1f92-c95c040d4401
-function gradient_2d_viz_2d(N_gradient_2d, x0, y0)
+function gradient_2d_viz_2d(
+		N_gradient_2d, f, x0, y0;
+		Lx_l = -10, Lx_u = 10, Ly_l = -10, Ly_u = 10,
+		η = 1e-3, dx = 0.1, dy = 0.1
+	)
 
 	history = accumulate(1:N_gradient_2d, init=[x0, y0]) do old, _
-		gradient_descent_2d_step(himmelbau, old...)
+		gradient_descent_2d_step(f, old..., η=η)
 	end
 	
 	all = [[x0, y0], history...]
 	
-	p = heatmap(-4:0.4:5, -4:0.4:4, himmelbau)
+	p = Plots.heatmap(
+		Lx_l:dx:Lx_u,
+		Ly_l:dy:Ly_u,
+		f,
+		c=:magma,
+		colorbar_title="L",
+	)
 	
-	plot!(p, first.(all), last.(all), 
-		color="blue", opacity=range(.5,step=.2,length=length(all)), label=nothing)
-	scatter!(p, first.(all), last.(all), 
-		color="blue", label="gradient descent", 
-		markersize=3, markerstrokewidth=0)
+	plot!(xguide = "x", yguide = "y")
+	
+	plot!(
+		p,
+		first.(all),
+		last.(all), 
+		#opacity=range(.5,step=.2,length=length(all)),
+		label=nothing,
+		c=:white,
+	)
+	scatter!(
+		p,
+		first.(all),
+		last.(all), 
+		label=nothing, 
+		markersize=3,
+		markerstrokewidth=0,
+		color=:white,
+	)
 	
 	as_svg(p)
 end
 
 # ╔═╡ fbb4a9a4-1248-11eb-00e2-fd346f0056db
-gradient_2d_viz_2d(N_gradient_2d, x0_gradient_2d, y0_gradient_2d)
+gradient_2d_viz_2d(
+	N_gradient_2d,
+	himmelbau,
+	x0_gradient_2d,
+	y0_gradient_2d,
+	Lx_l = -5,
+	Lx_u = 5,
+	Ly_l = -5,
+	Ly_u = 5,
+	η = 1e-2
+)
 
 # ╔═╡ 496b8816-12d3-11eb-3cec-c777ba81eb60
 let
@@ -1247,8 +1421,9 @@ end
 # ╟─048890ee-106a-11eb-1a81-5744150543e8
 # ╟─0565af4c-106a-11eb-0d38-2fb84493d86f
 # ╟─056ed7f2-106a-11eb-3543-31a5cb560e80
+# ╠═d4460b68-5142-11eb-0e92-a34151a13e67
 # ╟─0579e962-106a-11eb-26b5-2160f461f4cc
-# ╠═0587db1c-106a-11eb-0560-c3d53c516805
+# ╟─0587db1c-106a-11eb-0560-c3d53c516805
 # ╟─05976f0c-106a-11eb-03a4-0febbc18fae8
 # ╠═05b01f6e-106a-11eb-2a88-5f523fafe433
 # ╟─0d191540-106e-11eb-1f20-bf72a75fb650
@@ -1268,6 +1443,7 @@ end
 # ╟─a732bbcc-112c-11eb-1d65-110c049e226c
 # ╟─c9535ad6-10b9-11eb-0537-45f13931cd71
 # ╟─7495af52-10ba-11eb-245f-a98781ba123c
+# ╟─e96f2fc4-13e4-11eb-0617-912d0f0dcfcc
 # ╟─327de976-10b9-11eb-1916-69ad75fc8dc4
 # ╟─43df67bc-10bb-11eb-1cbd-cd962a01e3ee
 # ╠═d5a8bd48-10bf-11eb-2291-fdaaff56e4e6
@@ -1278,8 +1454,11 @@ end
 # ╟─3df7d63a-12c4-11eb-11ca-0b8db4bd9121
 # ╟─2335cae6-112f-11eb-3c2c-254e82014567
 # ╠═fff7754c-12c4-11eb-2521-052af1946b66
+# ╠═8decf7ba-155d-11eb-1675-a33cf23a6394
 # ╟─4d0efa66-12c6-11eb-2027-53d34c68d5b0
 # ╠═b74d94b8-10bf-11eb-38c1-9f39dfcb1096
+# ╟─4a0af1d4-13e9-11eb-3c1c-71e279163c70
+# ╠═3e6ed55a-13eb-11eb-29a0-c15dfbc05737
 # ╟─15b50428-1264-11eb-163e-23e2f3590502
 # ╟─ab72fdbe-10be-11eb-3b33-eb4ab41730d6
 # ╟─990236e0-10be-11eb-333a-d3080a224d34
@@ -1293,16 +1472,19 @@ end
 # ╠═0a095a94-1245-11eb-001a-b908128532aa
 # ╟─51c9a25e-1244-11eb-014f-0bcce2273cee
 # ╟─58675b3c-1245-11eb-3548-c9cb8a6b3188
-# ╟─b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
+# ╠═b4bb4b3a-12ce-11eb-3fe5-ad7ccd73febb
 # ╟─586d0352-1245-11eb-2504-05d0aa2352c6
-# ╠═589b2b4c-1245-11eb-1ec7-693c6bda97c4
+# ╟─589b2b4c-1245-11eb-1ec7-693c6bda97c4
 # ╟─58b45a0e-1245-11eb-04d1-23a1f3a0f242
-# ╠═68274534-1103-11eb-0d62-f1acb57721bc
+# ╟─c1c88f14-13fc-11eb-2ae7-75790d69196a
+# ╟─cd091e10-13fa-11eb-1769-cfe9923c359a
+# ╠═bb8f5f88-13f9-11eb-1f9c-3f084732a7fa
 # ╟─82539bbe-106e-11eb-0e9e-170dfa6a7dad
 # ╟─b394b44e-1245-11eb-2f86-8d10113e8cfc
 # ╠═bd8522c6-12e8-11eb-306c-c764f78486ef
-# ╠═321964ac-126d-11eb-0a04-0d3e3fb9b17c
-# ╟─5ea6c1f0-126c-11eb-3963-c98548f0b36e
+# ╠═6d0e063e-157f-11eb-0b0e-f958906234f1
+# ╠═6f10c250-157f-11eb-33f1-add2a5aae022
+# ╠═5ea6c1f0-126c-11eb-3963-c98548f0b36e
 # ╠═b7d3aa8c-12e8-11eb-3430-ff5d7df6a122
 # ╠═a15509ee-126c-11eb-1fa3-cdda55a47fcb
 # ╟─c82b2148-126c-11eb-1c03-c157c9bd7eba
@@ -1315,31 +1497,31 @@ end
 # ╠═d33271a2-12df-11eb-172a-bd5600265f49
 # ╟─ed344a8c-12df-11eb-03a3-2922620fd20f
 # ╟─8ae98c74-12e0-11eb-2802-d9a544d8b7ae
-# ╟─88b30f10-12e1-11eb-383d-4f095625cd16
+# ╠═88b30f10-12e1-11eb-383d-4f095625cd16
 # ╟─a53cf3f8-12e1-11eb-0b0c-2b794a7ac841
-# ╟─90114f98-12e0-11eb-2011-a3207bbc24f6
+# ╠═d69a3d44-17e5-11eb-12b6-a731ee64622f
+# ╠═90114f98-12e0-11eb-2011-a3207bbc24f6
 # ╟─754e4c48-12df-11eb-3818-f54f6fc7176b
 # ╠═9489009a-12e8-11eb-2fb7-97ba0bdf339c
-# ╠═34dc4b02-1248-11eb-26b2-5d2610cfeb41
 # ╟─f46aeaf0-1246-11eb-17aa-2580fdbcfa5a
 # ╟─e3120c18-1246-11eb-3bf4-7f4ac45856e0
 # ╠═ebca11d8-12c9-11eb-3dde-c546eccf40fc
 # ╟─9fd2956a-1248-11eb-266d-f558cda55702
 # ╠═852be3c4-12e8-11eb-1bbb-5fbc0da74567
-# ╠═8a114ca8-12e8-11eb-2de6-9149d1d3bc3d
+# ╠═888a2574-156f-11eb-3f06-1518c902ceb2
 # ╠═92854562-1249-11eb-0b81-156982df1284
-# ╠═4454c2b2-12e3-11eb-012c-c362c4676bf6
-# ╟─fbb4a9a4-1248-11eb-00e2-fd346f0056db
+# ╟─4454c2b2-12e3-11eb-012c-c362c4676bf6
 # ╟─4aace1a8-12e3-11eb-3e07-b5827a2a6765
 # ╟─54a58f84-12e3-11eb-10b9-7d55a16c81ba
+# ╠═fbb4a9a4-1248-11eb-00e2-fd346f0056db
+# ╠═b6ae4d7e-12e6-11eb-1f92-c95c040d4401
 # ╠═a0045046-1248-11eb-13bd-8b8ad861b29a
 # ╟─7e318fea-12e7-11eb-3490-b17e0d4dbc50
 # ╠═605aafa4-12e7-11eb-2d13-7f7db3fac439
-# ╟─9ae4ebac-12e3-11eb-0acc-23113f5264a9
+# ╠═9ae4ebac-12e3-11eb-0acc-23113f5264a9
 # ╟─5e0f16b4-12e3-11eb-212f-e565f97adfed
-# ╟─b6ae4d7e-12e6-11eb-1f92-c95c040d4401
 # ╟─a03890d6-1248-11eb-37ee-85b0a5273e0c
-# ╠═6d1ee93e-1103-11eb-140f-63fca63f8b06
+# ╟─6d1ee93e-1103-11eb-140f-63fca63f8b06
 # ╟─8261eb92-106e-11eb-2ccc-1348f232f5c3
 # ╠═65e691e4-124a-11eb-38b1-b1732403aa3d
 # ╟─6f4aa432-1103-11eb-13da-fdd9eefc7c86
@@ -1353,8 +1535,9 @@ end
 # ╟─471cbd84-124c-11eb-356e-371d23011af5
 # ╠═2fc55daa-124f-11eb-399e-659e59148ef5
 # ╠═3a6ec2e4-124f-11eb-0f68-791475bab5cd
+# ╠═20f9742c-1593-11eb-2acc-e352be3bc941
+# ╠═f2bc6220-1e0e-11eb-3b16-db7117a39473
 # ╟─2fcb93aa-124f-11eb-10de-55fced6f4b83
-# ╠═a150fd60-124f-11eb-35d6-85104bcfd0fe
 # ╟─3f5e88bc-12c8-11eb-2d74-51f2f5060928
 # ╠═c569a5d8-1267-11eb-392f-452de141161b
 # ╠═e55d9c1e-1267-11eb-1b3c-5d772662518a
@@ -1365,27 +1548,29 @@ end
 # ╟─04364dee-12cb-11eb-2f94-bfd3fb405907
 # ╟─249c297c-12ce-11eb-2054-d1e926335148
 # ╟─c56cc19c-12ca-11eb-3c6c-7f3ea98eeb4e
-# ╟─496b8816-12d3-11eb-3cec-c777ba81eb60
+# ╠═496b8816-12d3-11eb-3cec-c777ba81eb60
 # ╟─480fde46-12d4-11eb-2dfb-1b71692c7420
 # ╟─4837e1ae-12d2-11eb-0df9-21dcc1892fc9
 # ╟─a9630d28-12d2-11eb-196b-773d8498b0bb
+# ╠═351850d6-15a7-11eb-0cec-d54644ad6220
 # ╟─23c53be4-12d4-11eb-1d39-8d11b4431993
 # ╟─6016fccc-12d4-11eb-0f58-b9cd331cc7b3
 # ╠═754b5368-12e8-11eb-0763-e3ec56562c5f
-# ╠═ee20199a-12d4-11eb-1c2c-3f571bbb232e
 # ╟─38b09bd8-12d5-11eb-2f7b-579e9db3973d
 # ╠═6e1b5b6a-12e8-11eb-3655-fb10c4566cdc
+# ╠═7d022f9a-1efb-11eb-3948-b5baeb6fc5e7
+# ╠═86556128-15a7-11eb-07f6-85455673d6ea
 # ╟─106670f2-12d6-11eb-1854-5bf0fc6f4dfb
 # ╟─b94b7610-106d-11eb-2852-25337ce6ec3a
 # ╟─112eb7b2-1428-11eb-1c60-15105fa0e5fa
 # ╠═5ac7dcea-1429-11eb-1429-0fdbd4e9b5b1
 # ╟─b94f9df8-106d-11eb-3be8-c5a1bb79d0d4
 # ╟─b9586d66-106d-11eb-0204-a91c8f8355f7
-# ╟─b9616f92-106d-11eb-1bd1-ede92a617fdb
+# ╠═b9616f92-106d-11eb-1bd1-ede92a617fdb
 # ╟─b969dbaa-106d-11eb-3e5a-81766a333c49
-# ╟─b9728c20-106d-11eb-2286-4f670c229f3e
+# ╠═b9728c20-106d-11eb-2286-4f670c229f3e
 # ╟─b97afa48-106d-11eb-3c2c-cdee1d1cc6d7
-# ╟─b98238ce-106d-11eb-1e39-f9eda5df76af
+# ╠═b98238ce-106d-11eb-1e39-f9eda5df76af
 # ╟─b989e544-106d-11eb-3c53-3906c5c922fb
 # ╟─05bfc716-106a-11eb-36cb-e7c488050d54
 # ╟─df42aa9e-10c9-11eb-2c19-2d7ce40a1c6c
