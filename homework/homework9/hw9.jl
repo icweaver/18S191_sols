@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.9
+# v0.12.18
 
 using Markdown
 using InteractiveUtils
@@ -33,6 +33,9 @@ end
 # ╔═╡ 169727be-2433-11eb-07ae-ab7976b5be90
 md"_homework 9, version 1_"
 
+# ╔═╡ 940a7cc4-5144-11eb-2a3d-3733a8fd88a1
+TableOfContents(depth=10)
+
 # ╔═╡ 21524c08-2433-11eb-0c55-47b1bdc9e459
 md"""
 
@@ -43,7 +46,7 @@ md"""
 # ╔═╡ 23335418-2433-11eb-05e4-2b35dc6cca0e
 # edit the code below to set your name and kerberos ID (i.e. email without @mit.edu)
 
-student = (name = "Jazzy Doe", kerberos_id = "jazz")
+student = (name = "Ian Weaver", kerberos_id = "hahvard")
 
 # you might need to wait until all other cells in this notebook have completed running. 
 # scroll around the page to see what's up
@@ -191,7 +194,7 @@ The simulation begins at the preindustrial equilibrium, i.e. a temperature $T_{0
 
 # ╔═╡ fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 md"""
-``B = `` $(@bind B_slider Slider(-2.5:.001:0; show_value=true, default=-1.3))
+``B = `` $(@bind B_slider Slider(-2.5:.001:2.5; show_value=true, default=-1.3))
 """
 
 # ╔═╡ 16348b6a-1fc2-11eb-0b9c-65df528db2a1
@@ -206,7 +209,7 @@ md"""
 
 # ╔═╡ a86f13de-259d-11eb-3f46-1f6fb40020ce
 observations_from_changing_B = md"""
-Hello world!
+The more negative ``B`` is, the smaller the temperature change is. This means that the more negative feeback there is, the less the system will change.
 """
 
 # ╔═╡ 3d66bd30-259d-11eb-2694-471fb3a4a7be
@@ -216,7 +219,7 @@ md"""
 
 # ╔═╡ 5f82dec8-259e-11eb-2f4f-4d661f44ef41
 observations_from_nonnegative_B = md"""
-Hello world!
+Runaway temperature change!
 """
 
 # ╔═╡ 56b68356-2601-11eb-39a9-5f4b8e580b87
@@ -234,9 +237,6 @@ md"""
 👉 Create a graph to visualize ECS as a function of B. 
 """
 
-# ╔═╡ b9f882d8-266b-11eb-2998-75d6539088c7
-
-
 # ╔═╡ 269200ec-259f-11eb-353b-0b73523ef71a
 md"""
 #### Exercise 1.2 - _Doubling CO₂_
@@ -252,13 +252,6 @@ The CO₂ concentrations in the _future_ depend on human action. There are sever
 md"""
 👉 In what year are we expected to have doubled the CO₂ concentration, under policy scenario RCP8.5?
 """
-
-# ╔═╡ 50ea30ba-25a1-11eb-05d8-b3d579f85652
-expected_double_CO2_year = let
-	
-	
-	missing
-end
 
 # ╔═╡ bade1372-25a1-11eb-35f4-4b43d4e8d156
 md"""
@@ -305,6 +298,13 @@ let
 		label="ΔT(t) = T(t) - T₀")
 end |> as_svg
 
+# ╔═╡ f000e3ca-2bc0-11eb-1257-617b712e82e4
+let
+	Bs = -2.5:0.01:-0.1
+	p = plot(xguide=L"B", yguide=L"ECS")
+	plot!(p, Bs, ECS(B=Bs))
+end
+
 # ╔═╡ 736ed1b6-1fc2-11eb-359e-a1be0a188670
 B_samples = let
 	B_distribution = Normal(B̅, σ)
@@ -316,7 +316,7 @@ B_samples = let
 end
 
 # ╔═╡ 49cb5174-1fc3-11eb-3670-c3868c9b0255
-histogram(B_samples, size=(600, 250), label=nothing, xlabel="B [W/m²/K]", ylabel="samples")
+stephist(B_samples, size=(600, 250), label=nothing, xlabel="B [W/m²/K]", ylabel="samples", fill=true)
 
 # ╔═╡ f3abc83c-1fc7-11eb-1aa8-01ce67c8bdde
 md"""
@@ -324,13 +324,19 @@ md"""
 """
 
 # ╔═╡ 3d72ab3a-2689-11eb-360d-9b3d829b78a9
-ECS_samples = missing
+ECS_samples = ECS(B=B_samples)
 
 # ╔═╡ b6d7a362-1fc8-11eb-03bc-89464b55c6fc
 md"**Answer:**"
 
 # ╔═╡ 1f148d9a-1fc8-11eb-158e-9d784e390b24
-
+stephist(
+	ECS_samples,
+	label=nothing,
+	fill=true,
+	xlabel="ECS [K]",
+	ylabel="samples",
+)
 
 # ╔═╡ cf8dca6c-1fc8-11eb-1f89-099e6ba53c22
 md"It looks like the ECS distribution is **not normally distributed**, even though $B$ is. 
@@ -339,7 +345,10 @@ md"It looks like the ECS distribution is **not normally distributed**, even thou
 "
 
 # ╔═╡ 02173c7a-2695-11eb-251c-65efb5b4a45f
+ECS_mean = mean(ECS_samples)
 
+# ╔═╡ 2a7383b4-2c63-11eb-0b2d-ad860a8e8b3a
+ECS_mean_B = ECS(B=mean(B_samples))
 
 # ╔═╡ 440271b6-25e8-11eb-26ce-1b80aa176aca
 md"👉 Does accounting for uncertainty in feedbacks make our expectation of global warming better (less implied warming) or worse (more implied warming)?"
@@ -434,12 +443,28 @@ In this simulation, we used `T0 = 14` and `CO2 = t -> 280`, which is why `T` is 
 
 # ╔═╡ 9596c2dc-2671-11eb-36b9-c1af7e5f1089
 simulated_rcp85_model = let
-	
-	missing
+	ebm = Model.EBM(14.0, 1850, 1, Model.CO2_RCP85)
+	Model.run!(ebm, 2400)
+	ebm
 end
 
 # ╔═╡ f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
+plot(
+	simulated_rcp85_model.t,
+	simulated_rcp85_model.T,
+	xguide="Date",
+	yguide="Temperature (C)"
+)
 
+# ╔═╡ 855b1fe0-2e04-11eb-1227-8da4a450ba56
+RCP85_T_in_2100 = let
+	t = simulated_rcp85_model.t
+	T = simulated_rcp85_model.T
+	T[findfirst(t .≥ 2100)]
+end
+
+# ╔═╡ 1e1739bc-2e05-11eb-1e2b-2344d7e97f56
+md"The temperature will be $(round(RCP85_T_in_2100, digits=2)) C in 2100."
 
 # ╔═╡ 4b091fac-2672-11eb-0db8-75457788d85e
 md"""
@@ -458,8 +483,12 @@ md"""
 
 # ╔═╡ f688f9f2-2671-11eb-1d71-a57c9817433f
 function temperature_response(CO2::Function, B::Float64=-1.3)
-	
-	return missing
+	simulated_model = let
+		ebm = Model.EBM(14.0, 1850, 1, CO2; B=B)
+		Model.run!(ebm, 2100)
+		ebm
+	end
+	T = simulated_model.T[end]
 end
 
 # ╔═╡ 049a866e-2672-11eb-29f7-bfea7ad8f572
@@ -484,6 +513,11 @@ t = 1850:2100
 plot(t, Model.CO2_RCP85.(t), 
 	ylim=(0,1200), ylabel="CO2 concentration [ppm]")
 
+# ╔═╡ 50ea30ba-25a1-11eb-05d8-b3d579f85652
+expected_double_CO2_year = let
+	t[findfirst(Model.CO2_RCP85(t) .≥ 560)]
+end
+
 # ╔═╡ 40f1e7d8-252d-11eb-0549-49ca4e806e16
 @bind t_scenario_test Slider(t; show_value=true, default=1850)
 
@@ -498,8 +532,20 @@ We are interested in how the **uncertainty in our input** $B$ (the climate feedb
 
 """
 
-# ╔═╡ f2e55166-25ff-11eb-0297-796e97c62b07
+# ╔═╡ 9487e9ca-2eaa-11eb-06a3-4f92521d6f17
+function monte_carlo_sim(CO2::Function=Model.CO2_RCP26, N=1_000)
+	B_dist = Normal(B̅, σ)
+	Bs = rand(B_dist, N)
+	Ts = temperature_response.(CO2, Bs)
+	Ts = Ts[Ts .≥ 0]
+	return mean(Ts), std(Ts), Ts
+end
 
+# ╔═╡ f2e55166-25ff-11eb-0297-796e97c62b07
+monte_carlo_sim(Model.CO2_RCP26)
+
+# ╔═╡ 71b1af8c-2ead-11eb-2408-4597a40fec80
+monte_carlo_sim(Model.CO2_RCP85)
 
 # ╔═╡ 1ea81214-1fca-11eb-2442-7b0b448b49d6
 md"""
@@ -766,13 +812,14 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╔═╡ Cell order:
 # ╟─169727be-2433-11eb-07ae-ab7976b5be90
 # ╟─18be4f7c-2433-11eb-33cb-8d90ca6f124c
+# ╠═940a7cc4-5144-11eb-2a3d-3733a8fd88a1
 # ╟─21524c08-2433-11eb-0c55-47b1bdc9e459
-# ╠═23335418-2433-11eb-05e4-2b35dc6cca0e
+# ╟─23335418-2433-11eb-05e4-2b35dc6cca0e
 # ╟─253f4da0-2433-11eb-1e48-4906059607d3
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
 # ╟─87e68a4a-2433-11eb-3e9d-21675850ed71
 # ╟─fe3304f8-2668-11eb-066d-fdacadce5a19
-# ╟─930d7154-1fbf-11eb-1c3a-b1970d291811
+# ╠═930d7154-1fbf-11eb-1c3a-b1970d291811
 # ╟─1312525c-1fc0-11eb-2756-5bc3101d2260
 # ╠═c4398f9c-1fc4-11eb-0bbb-37f066c6027d
 # ╟─7f961bc0-1fc5-11eb-1f18-612aeff0d8df
@@ -780,13 +827,13 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 # ╟─16348b6a-1fc2-11eb-0b9c-65df528db2a1
 # ╟─e296c6e8-259c-11eb-1385-53f757f4d585
-# ╠═a86f13de-259d-11eb-3f46-1f6fb40020ce
+# ╟─a86f13de-259d-11eb-3f46-1f6fb40020ce
 # ╟─3d66bd30-259d-11eb-2694-471fb3a4a7be
-# ╠═5f82dec8-259e-11eb-2f4f-4d661f44ef41
+# ╟─5f82dec8-259e-11eb-2f4f-4d661f44ef41
 # ╟─56b68356-2601-11eb-39a9-5f4b8e580b87
 # ╟─7d815988-1fc7-11eb-322a-4509e7128ce3
 # ╟─aed8f00e-266b-11eb-156d-8bb09de0dc2b
-# ╠═b9f882d8-266b-11eb-2998-75d6539088c7
+# ╠═f000e3ca-2bc0-11eb-1257-617b712e82e4
 # ╟─269200ec-259f-11eb-353b-0b73523ef71a
 # ╠═e10a9b70-25a0-11eb-2aed-17ed8221c208
 # ╟─2dfab366-25a1-11eb-15c9-b3dd9cd6b96c
@@ -802,6 +849,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═1f148d9a-1fc8-11eb-158e-9d784e390b24
 # ╟─cf8dca6c-1fc8-11eb-1f89-099e6ba53c22
 # ╠═02173c7a-2695-11eb-251c-65efb5b4a45f
+# ╠═2a7383b4-2c63-11eb-0b2d-ad860a8e8b3a
 # ╟─440271b6-25e8-11eb-26ce-1b80aa176aca
 # ╠═cf276892-25e7-11eb-38f0-03f75c90dd9e
 # ╟─5b5f25f0-266c-11eb-25d4-17e411c850c9
@@ -813,6 +861,8 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─12cbbab0-2671-11eb-2b1f-038c206e84ce
 # ╠═9596c2dc-2671-11eb-36b9-c1af7e5f1089
 # ╠═f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
+# ╠═855b1fe0-2e04-11eb-1227-8da4a450ba56
+# ╠═1e1739bc-2e05-11eb-1e2b-2344d7e97f56
 # ╟─4b091fac-2672-11eb-0db8-75457788d85e
 # ╟─9cdc5f84-2671-11eb-3c78-e3495bc64d33
 # ╠═f688f9f2-2671-11eb-1d71-a57c9817433f
@@ -824,8 +874,10 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═40f1e7d8-252d-11eb-0549-49ca4e806e16
 # ╟─ee1be5dc-252b-11eb-0865-291aa823b9e9
 # ╟─06c5139e-252d-11eb-2645-8b324b24c405
+# ╠═9487e9ca-2eaa-11eb-06a3-4f92521d6f17
 # ╠═f2e55166-25ff-11eb-0297-796e97c62b07
-# ╟─1ea81214-1fca-11eb-2442-7b0b448b49d6
+# ╠═71b1af8c-2ead-11eb-2408-4597a40fec80
+# ╠═1ea81214-1fca-11eb-2442-7b0b448b49d6
 # ╟─a0ef04b0-25e9-11eb-1110-cde93601f712
 # ╟─3e310cf8-25ec-11eb-07da-cb4a2c71ae34
 # ╟─d6d1b312-2543-11eb-1cb2-e5b801686ffb
