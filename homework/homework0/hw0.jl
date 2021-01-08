@@ -33,6 +33,9 @@ md"""
 Submission by: **_$(student.name)_** ($(student.kerberos_id)@mit.edu)
 """
 
+# ╔═╡ 82da4538-5114-11eb-10a9-6dcac2ac9401
+TableOfContents()
+
 # ╔═╡ a2181260-e6cd-11ea-2a69-8d9d31d1ef0e
 md"""
 # Homework 0: Getting up and running
@@ -188,9 +191,6 @@ begin
 	Pkg.add("PlutoUI")
 	using PlutoUI
 end
-
-# ╔═╡ 82da4538-5114-11eb-10a9-6dcac2ac9401
-PlutoUI.TableOfContents()
 
 # ╔═╡ dbc4da6a-e7b4-11ea-3b70-6f2abfcab992
 md"Just like the definition above, our `sierpinksi` function is _recursive_: it calls itself."

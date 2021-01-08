@@ -19,6 +19,9 @@ using BenchmarkTools
 # ╔═╡ 83eb9ca0-ed68-11ea-0bc5-99a09c68f867
 md"_homework 1, version 4_"
 
+# ╔═╡ 2da045f2-5116-11eb-0bed-8bc58f6a1399
+TableOfContents(depth=10)
+
 # ╔═╡ ac8ff080-ed61-11ea-3650-d9df06123e1f
 md"""
 
@@ -69,9 +72,6 @@ begin
 	Pkg.add("PlutoUI")
 	using PlutoUI
 end
-
-# ╔═╡ 2da045f2-5116-11eb-0bed-8bc58f6a1399
-PlutoUI.TableOfContents(depth=10)
 
 # ╔═╡ 67461396-ee0a-11ea-3679-f31d46baa9b4
 md"_We set up Images.jl again:_"
