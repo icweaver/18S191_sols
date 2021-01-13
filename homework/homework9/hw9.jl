@@ -66,46 +66,45 @@ tendency(ebm) = (1. /ebm.C) * (
 	+ greenhouse_effect(ebm.CO2(ebm.t[end]), a=ebm.a, CO2_PI=ebm.CO2_PI)
 )
 
-Base.@kwdef mutable struct EBM{
-		F<:Float64, R<:Real, M<:Measurement{Float64}, FN<:Function
-	}
-	T::Vector{M}
-	t::Vector{R}
-	Δt::F
-	CO2::FN
+mutable struct EBM
+	T::Vector{Measurement{Float64}}
+	t::Vector{Float64}
+	Δt::Float64
+	CO2::Function
 
-	C::F = C
-	a::F = a
-	A::Union{F, M} = A
-	B::Union{F, M} = B
-	CO2_PI::F = CO2_PI
-	α::F = α
-	S::F = S
+	C::Float64
+	a::Float64
+	A::Measurement{Float64}
+	B::Measurement{Float64}
+	CO2_PI::Float64
+	α::Float64
+	S::Float64
 end
 
-# Construct from float inputs for convenience
+
+# Make constant parameters optional kwargs
 EBM(
-	T0::Union{F, M},
-	t0::R,
-	Δt::F,
-	CO2::FN,
-	C = C,
-	a = a,
-	A = A,
-	B = B,
-	CO2_PI = CO2_PI,
-	α = α,
-	S = S,
-) where {
-	F<:Float64, R<:Real, M<:Measurement{Float64}, FN<:Function
-} = EBM(
-		T = [measurement(T0)],
-		t = Real[t0],
-		Δt = Δt,
-		CO2 = CO2,
-		B = measurement(B),
-		A = measurement(A),
-	)
+	T::Union{Vector{Int}, Vector{Float64}, Vector{Measurement{Float64}}},
+	t::Union{Vector{Int}, Vector{Float64}},
+	Δt::Real,
+	CO2::Function;
+	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
+) = EBM(T, t, Δt, CO2, C, a, A, B, CO2_PI, α, S)
+
+# Construct from non-array inputs for convenience
+EBM(
+	T0::Union{Real, Measurement{Float64}},
+	t0::Real,
+	Δt::Real,
+	CO2::Function;
+	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
+) = EBM(
+	[measurement(T0)],
+	Float64[t0],
+	Δt,
+	CO2;
+	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S
+)
 
 function run!(ebm::EBM, end_year::Real)
 	while ebm.t[end] < end_year
@@ -294,7 +293,7 @@ let
 	# the definition of A depends on B, so we recalculate:
 	A = Model.S*(1. - Model.α)/4 + B_slider*Model.T0
 	# create the model
-	ebm_ECS = Model.EBM(T=14.0±0.3, t=-100., Δt=1., CO2=double_CO2, A=A, B=B_slider ± 0.02)
+	ebm_ECS = Model.EBM(14.0±0.3, -100., 1., double_CO2; A=A, B=B_slider ± 0.02)
 	ebm_ECS
 	Model.run!(ebm_ECS, 300)
 	
@@ -440,10 +439,10 @@ You can set up an instance of `EBM` like so:
 
 # ╔═╡ 746aa5bc-266c-11eb-14c9-63ccc313f5de
 empty_ebm = Model.EBM(
-	T = 14.0, # initial temperature
-	t = 1850, # initial year
-	Δt = 1.0, # Δt
-	CO2 = t -> 280.0, # CO2 function
+	14.0, # initial temperature
+	1850, # initial year
+	1.0, # Δt
+	t -> 280.0, # CO2 function
 )
 
 # ╔═╡ a919d584-2670-11eb-1cf9-2327c8135d6d
@@ -455,7 +454,7 @@ Let's run our model:
 
 # ╔═╡ bfb07a0a-2670-11eb-3938-772499c637b1
 simulated_model = let
-	ebm = Model.EBM(T=14.0, t=1850, Δt=1.0, CO2 = t -> 280.0)
+	ebm = Model.EBM(14.0, 1850, 1.0, t -> 280.0)
 	Model.run!(ebm, 2020)
 	ebm
 end
@@ -471,7 +470,7 @@ In this simulation, we used `T0 = 14` and `CO2 = t -> 280`, which is why `T` is 
 
 # ╔═╡ 9596c2dc-2671-11eb-36b9-c1af7e5f1089
 simulated_rcp85_model = let
-	ebm = Model.EBM(T=14.0, t=1850, Δt=1.0, CO2=Model.CO2_RCP85, B=-1.3±0.4)
+	ebm = Model.EBM(14.0, 1850, 1.0, Model.CO2_RCP85; B=-1.3±0.4)
 	 Model.run!(ebm, 2400)
 	 ebm
 end
@@ -514,7 +513,7 @@ md"""
 # ╔═╡ f688f9f2-2671-11eb-1d71-a57c9817433f
 function temperature_response(CO2::Function, B=-1.3)
 	simulated_model = let
-		ebm = Model.EBM(T=14.0±4, t=1850, Δt=1.0, CO2=CO2; B=B)
+		ebm = Model.EBM(14.0 ± 4, 1850, 1.0, CO2; B=B)
 		Model.run!(ebm, 2100)
 		ebm
 	end
@@ -705,7 +704,7 @@ CO2max = 1_000_000
 Tneo = -48
 
 # ╔═╡ 06d28052-2531-11eb-39e2-e9613ab0401c
-ebm = Model.EBM(T=Float64(Tneo), t=0., Δt=5., CO2=Model.CO2_const)
+ebm = Model.EBM(Float64(Tneo), 0., 5., Model.CO2_const)
 
 # ╔═╡ 378aed18-252b-11eb-0b37-a3b511af2cb5
 let
@@ -914,7 +913,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═9487e9ca-2eaa-11eb-06a3-4f92521d6f17
 # ╠═f2e55166-25ff-11eb-0297-796e97c62b07
 # ╠═71b1af8c-2ead-11eb-2408-4597a40fec80
-# ╠═1ea81214-1fca-11eb-2442-7b0b448b49d6
+# ╟─1ea81214-1fca-11eb-2442-7b0b448b49d6
 # ╟─a0ef04b0-25e9-11eb-1110-cde93601f712
 # ╟─3e310cf8-25ec-11eb-07da-cb4a2c71ae34
 # ╟─d6d1b312-2543-11eb-1cb2-e5b801686ffb
