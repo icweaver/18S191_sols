@@ -23,11 +23,13 @@ begin
 			"LaTeXStrings",
 			"Distributions",
 			"Random",
+			"Measurements",
 	])
 	using LaTeXStrings
 	using Plots
 	using PlutoUI
 	using Random, Distributions
+	using Measurements
 end
 
 # ╔═╡ 930d7154-1fbf-11eb-1c3a-b1970d291811
@@ -292,7 +294,7 @@ let
 	# the definition of A depends on B, so we recalculate:
 	A = Model.S*(1. - Model.α)/4 + B_slider*Model.T0
 	# create the model
-	ebm_ECS = Model.EBM(T=14.0±0.3, t=-100., Δt=1., CO2=double_CO2, A=A, B=B_slider)
+	ebm_ECS = Model.EBM(T=14.0±0.3, t=-100., Δt=1., CO2=double_CO2, A=A, B=B_slider ± 0.02)
 	ebm_ECS
 	Model.run!(ebm_ECS, 300)
 	
@@ -319,8 +321,9 @@ let
 		ebm_ECS.t,
 		Measurements.value.(ebm_ECS.T .- ebm_ECS.T[1]),
 		ribbon = Measurements.uncertainty.(ebm_ECS.T),
-		label="ΔT(t) = T(t) - T₀")
-end |> as_svg
+		label="ΔT(t) = T(t) - T₀",
+	)
+end |> as_png
 
 # ╔═╡ f000e3ca-2bc0-11eb-1257-617b712e82e4
 let
@@ -659,7 +662,10 @@ md"""
 """
 
 # ╔═╡ 1d388372-2695-11eb-3068-7b28a2ccb9ac
+@bind log_CO2 Slider(1:6, show_value=true)
 
+# ╔═╡ 69d10122-5591-11eb-37e3-ddac85d84d36
+CO2 = 10^log_CO2
 
 # ╔═╡ 4c9173ac-2685-11eb-2129-99071821ebeb
 md"""
@@ -672,7 +678,9 @@ md"""
 # ╔═╡ 736515ba-2685-11eb-38cb-65bfcf8d1b8d
 function step_model!(ebm::Model.EBM, CO2::Real)
 	
-	# your code here
+	ebm.t = ebm.t[end]
+	ebm.T = emb.T[end]
+	emb.CO2 = CO2
 	
 	return ebm
 end
@@ -697,7 +705,7 @@ CO2max = 1_000_000
 Tneo = -48
 
 # ╔═╡ 06d28052-2531-11eb-39e2-e9613ab0401c
-ebm = Model.EBM(Tneo, 0., 5., Model.CO2_const)
+ebm = Model.EBM(T=Float64(Tneo), t=0., Δt=5., CO2=Model.CO2_const)
 
 # ╔═╡ 378aed18-252b-11eb-0b37-a3b511af2cb5
 let
@@ -712,9 +720,7 @@ let
 	
 	add_cold_hot_areas!(p)
 	add_reference_points!(p)
-	
-	# your code here 
-	
+		
 	plot!(p, 
 		[ebm.CO2(ebm.t[end])], [ebm.T[end]],
 		label=nothing,
@@ -841,10 +847,10 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 
 # ╔═╡ Cell order:
 # ╟─169727be-2433-11eb-07ae-ab7976b5be90
-# ╠═18be4f7c-2433-11eb-33cb-8d90ca6f124c
+# ╟─18be4f7c-2433-11eb-33cb-8d90ca6f124c
 # ╠═940a7cc4-5144-11eb-2a3d-3733a8fd88a1
-# ╠═21524c08-2433-11eb-0c55-47b1bdc9e459
-# ╠═23335418-2433-11eb-05e4-2b35dc6cca0e
+# ╟─21524c08-2433-11eb-0c55-47b1bdc9e459
+# ╟─23335418-2433-11eb-05e4-2b35dc6cca0e
 # ╟─253f4da0-2433-11eb-1e48-4906059607d3
 # ╠═1e06178a-1fbf-11eb-32b3-61769a79b7c0
 # ╟─87e68a4a-2433-11eb-3e9d-21675850ed71
@@ -854,7 +860,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═c4398f9c-1fc4-11eb-0bbb-37f066c6027d
 # ╟─7f961bc0-1fc5-11eb-1f18-612aeff0d8df
 # ╠═25f92dec-1fc4-11eb-055d-f34deea81d0e
-# ╠═fa7e6f7e-2434-11eb-1e61-1b1858bb0988
+# ╟─fa7e6f7e-2434-11eb-1e61-1b1858bb0988
 # ╟─16348b6a-1fc2-11eb-0b9c-65df528db2a1
 # ╟─e296c6e8-259c-11eb-1385-53f757f4d585
 # ╟─a86f13de-259d-11eb-3f46-1f6fb40020ce
@@ -918,6 +924,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╟─0e19f82e-2685-11eb-2e99-0d094c1aa520
 # ╟─1eabe908-268b-11eb-329b-b35160ec951e
 # ╠═1d388372-2695-11eb-3068-7b28a2ccb9ac
+# ╠═69d10122-5591-11eb-37e3-ddac85d84d36
 # ╟─53c2eaf6-268b-11eb-0899-b91c03713da4
 # ╠═06d28052-2531-11eb-39e2-e9613ab0401c
 # ╟─4c9173ac-2685-11eb-2129-99071821ebeb
