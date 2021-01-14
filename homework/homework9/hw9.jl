@@ -37,23 +37,64 @@ module Model
 
 using Measurements
 
-const S = 1368.0 # solar insolation [W/m^2]  (energy per unit time per unit area)
-const α = 0.3 # albedo, or planetary reflectivity [unitless]
+const S = 1368 ± 100 # solar insolation [W/m^2]  (energy per unit time per unit area)
+const α = 0.3 ± 0.1 # albedo, or planetary reflectivity [unitless]
 const B = -1.3 ± 0.0 # climate feedback parameter [W/m^2/°C],
 const T0 = 14.0 # preindustrial temperature [°C]
+const A = S*(1.0 - α)/4 + B*T0 # [W/m^2].
+const a = 5.0 # CO2 forcing coefficient [W/m^2]
+const CO2_PI = 280.0 # preindustrial CO2 concentration [parts per million; ppm]
+const C = 51.0 # atmosphere and upper-ocean heat capacity [J/m^2/°C]
 
 absorbed_solar_radiation(; α=α, S=S) = S*(1 - α)/4 # [W/m^2]
 outgoing_thermal_radiation(T; A=A, B=B) = A - B*T
-
-const A = S*(1.0 - α)/4 + B*T0 # [W/m^2].
-
 greenhouse_effect(CO2; a=a, CO2_PI=CO2_PI) = a*log(CO2/CO2_PI)
-
-const a = 5.0 # CO2 forcing coefficient [W/m^2]
-const CO2_PI = 280.0 # preindustrial CO2 concentration [parts per million; ppm]
 CO2_const(t) = CO2_PI # constant CO2 concentrations
 
-const C = 51.0 # atmosphere and upper-ocean heat capacity [J/m^2/°C]
+Base.@kwdef mutable struct EBM{F<:Float64, M<:Measurement{Float64}, FN<:Function}
+	T::Vector{M} # Temperature
+	t::Vector{F} # Time
+	Δt::F # Time step
+	CO2::FN # Concentration of CO2 over time
+
+	# Model parameters
+	C::M = C
+	a::M = a
+	A::M = A
+	B::M = B
+	CO2_PI::M = CO2_PI
+	α::M = α
+	S::M = S
+end
+
+# Define positional args
+EBM(
+	T::Union{Vector{<:Real}, Vector{Measurement{Float64}}},
+	t::Vector{<:Real},
+	Δt::Real,
+	CO2::Function;
+	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
+) = EBM(
+		T=measurement.(T), t=Float64.(t), Δt=Float64(Δt), CO2=CO2;
+		C=measurement(C), a=measurement(a), A=measurement(A), B=measurement(B),
+		CO2_PI=measurement(CO2_PI), α=measurement(α), S=measurement(S),
+	)
+
+# Construct from non-array inputs for convenience
+EBM(
+	T0::Union{Real, Measurement{Float64}},
+	t0::Real,
+	Δt::Real,
+	CO2::Function;
+	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
+) = EBM(
+		T = [measurement(T0)],
+		t = Float64[t0],
+		Δt = Float64(Δt),
+		CO2 = CO2;
+		C=measurement(C), a=measurement(a), A=measurement(A), B=measurement(B),
+		CO2_PI=measurement(CO2_PI), α=measurement(α), S=measurement(S),
+	)
 
 function timestep!(ebm)
 	append!(ebm.T, ebm.T[end] + ebm.Δt*tendency(ebm))
@@ -64,45 +105,6 @@ tendency(ebm) = (1. /ebm.C) * (
 	+ absorbed_solar_radiation(α=ebm.α, S=ebm.S)
 	- outgoing_thermal_radiation(ebm.T[end], A=ebm.A, B=ebm.B)
 	+ greenhouse_effect(ebm.CO2(ebm.t[end]), a=ebm.a, CO2_PI=ebm.CO2_PI)
-)
-
-mutable struct EBM{F<:Float64, M<:Measurement{Float64}, FN<:Function}
-	T::Vector{M}
-	t::Vector{F}
-	Δt::F
-	CO2::FN
-
-	C::F
-	a::F
-	A::M
-	B::M
-	CO2_PI::F
-	α::F
-	S::F
-end
-
-# Make constant parameters optional kwargs
-EBM(
-	T::Union{Vector{Int}, Vector{Float64}, Vector{Measurement{Float64}}},
-	t::Union{Vector{Int}, Vector{Float64}},
-	Δt::Real,
-	CO2::Function;
-	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
-) = EBM(T, t, Δt, CO2, C, a, A, B, CO2_PI, α, S)
-
-# Construct from non-array inputs for convenience
-EBM(
-	T0::Union{Real, Measurement{Float64}},
-	t0::Real,
-	Δt::Real,
-	CO2::Function;
-	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S,
-) = EBM(
-	[measurement(T0)],
-	Float64[t0],
-	Float64(Δt),
-	CO2;
-	C=C, a=a, A=A, B=measurement(B), CO2_PI=CO2_PI, α=α, S=S
 )
 
 function run!(ebm::EBM, end_year::Real)
@@ -124,14 +126,13 @@ function CO2_RCP26(t)
 	)
 end
 
-RCP26 = EBM(T0, 1850., 1., CO2_RCP26); run!(RCP26, 2100.)
-
 function CO2_RCP85(t)
 	CO2_PI * (
 		1 .+ fractional_increase(t) .* max.(1., exp.(((t .-1850.).-170)/100))
 	)
 end
 
+RCP26 = EBM(T0, 1850., 1., CO2_RCP26); run!(RCP26, 2100.)
 RCP85 = EBM(T0, 1850., 1., CO2_RCP85); run!(RCP85, 2100.)
 
 end # module
@@ -292,7 +293,6 @@ let
 	# the definition of A depends on B, so we recalculate:
 	A = Model.S*(1. - Model.α)/4 + (B_slider ± 0.02)*Model.T0
 	# create the model
-	@show A, B_slider
 	ebm_ECS = Model.EBM(14.0±0.3, -100., 1., double_CO2; A=A, B=B_slider ± 0.02)
 	ebm_ECS
 	Model.run!(ebm_ECS, 300)
@@ -897,7 +897,7 @@ TODO = html"<span style='display: inline; font-size: 2em; color: purple; font-we
 # ╠═9596c2dc-2671-11eb-36b9-c1af7e5f1089
 # ╠═f94a1d56-2671-11eb-2cdc-810a9c7a8a5f
 # ╠═855b1fe0-2e04-11eb-1227-8da4a450ba56
-# ╠═1e1739bc-2e05-11eb-1e2b-2344d7e97f56
+# ╟─1e1739bc-2e05-11eb-1e2b-2344d7e97f56
 # ╟─4b091fac-2672-11eb-0db8-75457788d85e
 # ╟─9cdc5f84-2671-11eb-3c78-e3495bc64d33
 # ╠═f688f9f2-2671-11eb-1d71-a57c9817433f
