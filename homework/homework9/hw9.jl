@@ -24,18 +24,20 @@ begin
 			"Distributions",
 			"Random",
 			"Measurements",
+			"Parameters",
 	])
 	using LaTeXStrings
 	using Plots
 	using PlutoUI
 	using Random, Distributions
 	using Measurements
+	using Parameters
 end
 
 # ╔═╡ 930d7154-1fbf-11eb-1c3a-b1970d291811
 module Model
 
-using Measurements
+using Parameters, Measurements
 
 const S = 1368 ± 100 # solar insolation [W/m^2]  (energy per unit time per unit area)
 const α = 0.3 ± 0.1 # albedo, or planetary reflectivity [unitless]
@@ -51,20 +53,20 @@ outgoing_thermal_radiation(T; A=A, B=B) = A - B*T
 greenhouse_effect(CO2; a=a, CO2_PI=CO2_PI) = a*log(CO2/CO2_PI)
 CO2_const(t) = CO2_PI # constant CO2 concentrations
 
-Base.@kwdef mutable struct EBM{F<:Float64, M<:Measurement{Float64}, FN<:Function}
-	T::Vector{M} # Temperature
-	t::Vector{F} # Time
-	Δt::F # Time step
-	CO2::FN # Concentration of CO2 over time
+@with_kw_noshow mutable struct EBM @deftype Measurement{Float64}
+	T::Vector{Measurement{Float64}} # Temperature
+	t::Vector{Float64} # Time
+	Δt::Float64 # Time step
+	CO2::Function # Concentration of CO2 over time
 
 	# Model parameters
-	C::M = C
-	a::M = a
-	A::M = A
-	B::M = B
-	CO2_PI::M = CO2_PI
-	α::M = α
-	S::M = S
+	C = C
+	a = a
+	A = A
+	B = B
+	CO2_PI = CO2_PI
+	α = α
+	S = S
 end
 
 # Define positional args
