@@ -66,21 +66,20 @@ tendency(ebm) = (1. /ebm.C) * (
 	+ greenhouse_effect(ebm.CO2(ebm.t[end]), a=ebm.a, CO2_PI=ebm.CO2_PI)
 )
 
-mutable struct EBM
-	T::Vector{Measurement{Float64}}
-	t::Vector{Float64}
-	Δt::Float64
-	CO2::Function
+mutable struct EBM{F<:Float64, M<:Measurement{Float64}, FN<:Function}
+	T::Vector{M}
+	t::Vector{F}
+	Δt::F
+	CO2::FN
 
-	C::Float64
-	a::Float64
-	A::Measurement{Float64}
-	B::Measurement{Float64}
-	CO2_PI::Float64
-	α::Float64
-	S::Float64
+	C::F
+	a::F
+	A::M
+	B::M
+	CO2_PI::F
+	α::F
+	S::F
 end
-
 
 # Make constant parameters optional kwargs
 EBM(
@@ -101,9 +100,9 @@ EBM(
 ) = EBM(
 	[measurement(T0)],
 	Float64[t0],
-	Δt,
+	Float64(Δt),
 	CO2;
-	C=C, a=a, A=A, B=B, CO2_PI=CO2_PI, α=α, S=S
+	C=C, a=a, A=A, B=measurement(B), CO2_PI=CO2_PI, α=α, S=S
 )
 
 function run!(ebm::EBM, end_year::Real)
@@ -291,8 +290,9 @@ let
 	end
 	
 	# the definition of A depends on B, so we recalculate:
-	A = Model.S*(1. - Model.α)/4 + B_slider*Model.T0
+	A = Model.S*(1. - Model.α)/4 + (B_slider ± 0.02)*Model.T0
 	# create the model
+	@show A, B_slider
 	ebm_ECS = Model.EBM(14.0±0.3, -100., 1., double_CO2; A=A, B=B_slider ± 0.02)
 	ebm_ECS
 	Model.run!(ebm_ECS, 300)
