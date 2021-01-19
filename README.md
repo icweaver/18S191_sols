@@ -1,12 +1,12 @@
-* [hw 00](https://icweaver.github.io/18S191/homework/homework0/hw0.html)
-* [hw 01](https://icweaver.github.io/18S191/homework/homework1/hw1.html)
-* [hw 02](https://icweaver.github.io/18S191/homework/homework2/hw2.html)
-* [hw 03](https://icweaver.github.io/18S191/homework/homework3/hw3.html)
-* [hw 04](https://icweaver.github.io/18S191/homework/homework4/hw4.html)
-* [hw 05](https://icweaver.github.io/18S191/homework/homework5/hw5.html)
-* [hw 06](https://icweaver.github.io/18S191/homework/homework6/hw6.html)
-* [hw 07](https://icweaver.github.io/18S191/homework/homework7/hw7.html)
-* [hw 09](https://icweaver.github.io/18S191/homework/homework9/hw9.html)
+* [hw 00](https://icweaver.github.io/18S191_sols/homework/homework0/hw0.html)
+* [hw 01](https://icweaver.github.io/18S191_sols/homework/homework1/hw1.html)
+* [hw 02](https://icweaver.github.io/18S191_sols/homework/homework2/hw2.html)
+* [hw 03](https://icweaver.github.io/18S191_sols/homework/homework3/hw3.html)
+* [hw 04](https://icweaver.github.io/18S191_sols/homework/homework4/hw4.html)
+* [hw 05](https://icweaver.github.io/18S191_sols/homework/homework5/hw5.html)
+* [hw 06](https://icweaver.github.io/18S191_sols/homework/homework6/hw6.html)
+* [hw 07](https://icweaver.github.io/18S191_sols/homework/homework7/hw7.html)
+* [hw 09](https://icweaver.github.io/18S191_sols/homework/homework9/hw9.html)
 
 # 18.S191: Introduction to computational thinking for real-world problems
 
