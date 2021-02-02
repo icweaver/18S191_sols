@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.12.20
 
 using Markdown
 using InteractiveUtils
@@ -306,10 +306,10 @@ black = RGB(0.0, 0.0, 0.0)
 invert(black)
 
 # ╔═╡ 4e21e0c4-ee0b-11ea-3d65-b311ae3f98e9
-red = RGB(0.8, 0.1, 0.1)
+red_color = RGB(0.8, 0.1, 0.1)
 
 # ╔═╡ 6dbf67ce-ee0b-11ea-3b71-abc05a64dc43
-invert(red)
+invert(red_color)
 
 # ╔═╡ 846b1330-ee0b-11ea-3579-7d90fafd7290
 md"Can you invert the picture of Philip?"
@@ -391,6 +391,9 @@ end
 
 # ╔═╡ 9751586e-ee0c-11ea-0cbb-b7eda92977c9
 quantize(philip)
+
+# ╔═╡ cff031b8-656f-11eb-284f-59b6e9969975
+red(philip[1, 1])
 
 # ╔═╡ 943103e2-ee0b-11ea-33aa-75a8a1529931
 philip_inverted = invert.(philip)
@@ -560,6 +563,9 @@ let
 	catch
 	end
 end
+
+# ╔═╡ cf772096-656e-11eb-09f6-836b626182db
+blue(philip[1, 1])
 
 # ╔═╡ 809f5330-ee09-11ea-0e5b-415044b6ac1f
 md"""
@@ -1540,7 +1546,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╟─8ef13896-ed68-11ea-160b-3550eeabbd7d
 # ╠═2da045f2-5116-11eb-0bed-8bc58f6a1399
 # ╟─ac8ff080-ed61-11ea-3650-d9df06123e1f
-# ╠═911ccbce-ed68-11ea-3606-0384e7580d7c
+# ╟─911ccbce-ed68-11ea-3606-0384e7580d7c
 # ╟─5f95e01a-ee0a-11ea-030c-9dba276aba92
 # ╠═65780f00-ed6b-11ea-1ecf-8b35523a7ac0
 # ╟─67461396-ee0a-11ea-3679-f31d46baa9b4
@@ -1595,6 +1601,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═9751586e-ee0c-11ea-0cbb-b7eda92977c9
 # ╟─f6cc03a0-ee07-11ea-17d8-013991514d42
 # ╠═63e8d636-ee0b-11ea-173d-bd3327347d55
+# ╠═cff031b8-656f-11eb-284f-59b6e9969975
 # ╠═591dd8b0-fd11-11ea-2cbe-cde4e4ec7f14
 # ╟─2cc2f84e-ee0d-11ea-373b-e7ad3204bb00
 # ╠═b8f26960-ee0a-11ea-05b9-3f4bc1099050
@@ -1645,6 +1652,7 @@ with_sobel_edge_detect(sobel_camera_image)
 # ╠═5609a980-1ef7-11eb-2744-1d14c8ef69d4
 # ╠═0db7df9e-1eed-11eb-1253-cb0ae17e6cf1
 # ╟─808deca8-ee09-11ea-0ee3-1586fa1ce282
+# ╠═cf772096-656e-11eb-09f6-836b626182db
 # ╟─809f5330-ee09-11ea-0e5b-415044b6ac1f
 # ╠═d8f2c402-f252-11ea-1bb0-c773509126db
 # ╠═ca1ac5f4-ee1c-11ea-3d00-ff5268866f87
